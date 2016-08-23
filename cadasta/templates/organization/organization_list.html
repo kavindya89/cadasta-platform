@@ -46,7 +46,11 @@
       </div>
       {% endif %}
       <div class="org-text">
+        {% if org.archived %}
+        <h4>{{ org.name }}<span class="label label-danger">Archived</span></h4>
+        {% else %}
         <h4>{{ org.name }}</h4>
+        {% endif %}
         {% if org.description %}
           <p>{{ org.description }}</p>
         {% endif %}
