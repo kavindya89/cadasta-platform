@@ -16,9 +16,16 @@
     <a class="index-link visible-md-inline visible-lg-inline" href="{% url 'organization:list' %}">
       <span class="glyphicon glyphicon-step-backward" aria-hidden="true"></span>
     </a>
-    <h1>
-      {{ organization.name }}
-    </h1>
+    {% if organization.archived %}
+      <h1>
+        {{ organization.name }}<span class="label label-danger">Archived</span>
+      </h1>
+    {% else %}
+      <h1>
+        {{ organization.name }}
+      </h1>
+    {% endif %}
+
     <div class="top-btn pull-right">
 
       <!-- More options menu -->
@@ -28,8 +35,10 @@
           <span class="more-menu glyphicon glyphicon-option-vertical"></span>
         </a>
         <ul class="dropdown-menu" aria-labelledby="dLabel">
+          {% if not organization.archived %}
           <li><a class="edit" href="{% url 'organization:edit' organization.slug %}">{% trans "Edit organization" %}</a></li>
           <li role="separator" class="divider"></li>
+          {% endif %}
           <li>
             {% if organization.archived %}
             <a class="archive" href="#unarchive_confirm" data-toggle="modal">{% trans "Unarchive organization" %}</a>
@@ -42,7 +51,7 @@
       {% endif %}
 
       <!-- Split add button -->
-      {% if add_allowed %}
+      {% if add_allowed and not organization.archived %}
       <div class="btn-group pull-right btn-add visible-sm-inline visible-md-inline visible-lg-block">
         <a href="{% url 'organization:project-add' organization.slug %}" class="btn btn-primary">
           <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> {% trans "Add project" %}
