@@ -35,10 +35,8 @@
           <span class="more-menu glyphicon glyphicon-option-vertical"></span>
         </a>
         <ul class="dropdown-menu" aria-labelledby="dLabel">
-          {% if not organization.archived %}
           <li><a class="edit" href="{% url 'organization:edit' organization.slug %}">{% trans "Edit organization" %}</a></li>
           <li role="separator" class="divider"></li>
-          {% endif %}
           <li>
             {% if organization.archived %}
             <a class="archive" href="#unarchive_confirm" data-toggle="modal">{% trans "Unarchive organization" %}</a>
@@ -51,7 +49,7 @@
       {% endif %}
 
       <!-- Split add button -->
-      {% if add_allowed and not organization.archived %}
+      {% if add_allowed %}
       <div class="btn-group pull-right btn-add visible-sm-inline visible-md-inline visible-lg-block">
         <a href="{% url 'organization:project-add' organization.slug %}" class="btn btn-primary">
           <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> {% trans "Add project" %}
