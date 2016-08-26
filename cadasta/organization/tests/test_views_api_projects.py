@@ -814,6 +814,9 @@ class ProjectDetailAPITest(UserTestCase):
         self._patch('namati', project, {'archived': True}, status=200)
         assert project.archived
 
+        self._patch('namati', project, {'name': 'OPDP'}, status=403)
+        assert project.name == 'Test Project'
+
     def test_unarchive(self):
         organization, project = self._test_objs(archived=True)
         self._patch('namati', project, {'archived': False}, status=200)
