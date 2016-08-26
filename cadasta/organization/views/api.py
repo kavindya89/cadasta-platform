@@ -50,18 +50,28 @@ class OrganizationDetail(APIPermissionRequiredMixin,
 class OrganizationUsers(APIPermissionRequiredMixin,
                         mixins.OrganizationRoles,
                         generics.ListCreateAPIView):
+    def update_permissions(self, request):
+        if self.org.archived:
+            return False
+        return 'org.users.add'
+
     serializer_class = serializers.OrganizationUserSerializer
     permission_required = {
         'GET': 'org.users.list',
-        'POST': 'org.users.add',
+        'POST': update_permissions,
     }
 
 
 class OrganizationUsersDetail(APIPermissionRequiredMixin,
                               mixins.OrganizationRoles,
                               generics.RetrieveUpdateDestroyAPIView):
+    def update_permissions(self, request):
+        if self.org.archived:
+            return False
+        return 'org.users.remove'
+
     serializer_class = serializers.OrganizationUserSerializer
-    permission_required = 'org.users.remove'
+    permission_required = update_permissions
 
     def destroy(self, request, *args, **kwargs):
         user = self.get_object()

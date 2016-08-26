@@ -12,6 +12,7 @@ ORG_USERS_EDIT = _("You don't have permission to edit roles of this "
                    "organization")
 ORG_USERS_REMOVE = _("You don't have permission to remove members from this "
                      "organization")
+ORG_FREEZE = _("You cannot make changes to an archived organization")
 
 PROJ_VIEW = _("You don't have permission to access this project")
 PROJ_EDIT = _("You don't have permission to update this project")

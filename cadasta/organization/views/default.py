@@ -81,7 +81,13 @@ class OrganizationEdit(LoginPermissionRequiredMixin,
     model = Organization
     form_class = forms.OrganizationForm
     template_name = 'organization/organization_edit.html'
-    permission_required = 'org.update'
+
+    def update_permissions(self, view, request):
+        if self.get_object().archived:
+            return False
+        return 'org.update'
+
+    permission_required = update_permissions
     permission_denied_message = error_messages.ORG_EDIT
 
     def get_success_url(self):
@@ -131,8 +137,15 @@ class OrganizationMembersAdd(mixins.OrganizationMixin,
     model = OrganizationRole
     form_class = forms.AddOrganizationMemberForm
     template_name = 'organization/organization_members_add.html'
-    permission_required = 'org.users.add'
+
+    def update_permissions(self, view, request):
+        if self.get_organization().archived:
+            return False
+        return 'org.users.add'
+
+    permission_required = update_permissions
     permission_denied_message = error_messages.ORG_USERS_ADD
+    # permission_denied_message = error_messages.ORG_FREEZE
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
@@ -165,7 +178,13 @@ class OrganizationMembersEdit(mixins.OrganizationMixin,
     slug_url_kwarg = 'username'
     template_name = 'organization/organization_members_edit.html'
     form_class = forms.EditOrganizationMemberForm
-    permission_required = 'org.users.edit'
+
+    def update_permissions(self, view, request):
+        if self.get_organization().archived:
+            return False
+        return 'org.users.edit'
+
+    permission_required = update_permissions
     permission_denied_message = error_messages.ORG_USERS_EDIT
 
     def get_success_url(self):
@@ -353,6 +372,8 @@ PROJECT_ADD_TEMPLATES = {
 
 
 def add_wizard_permission_required(self, view, request):
+    if Organization.objects.get(slug=self.kwargs.get('organization')).archived:
+        return False
     if request.method != 'POST':
         return ()
     session = request.session.get('wizard_project_add_wizard', None)
@@ -365,6 +386,7 @@ def add_wizard_permission_required(self, view, request):
 class ProjectAddWizard(SuperUserCheckMixin,
                        LoginPermissionRequiredMixin,
                        wizard.SessionWizardView):
+
     permission_required = add_wizard_permission_required
     form_list = PROJECT_ADD_FORMS
 
