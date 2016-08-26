@@ -123,6 +123,13 @@ class ProjectUsersAPITest(UserTestCase):
         assert (_('User with username or email some-user does not exist')
                 in content['username'])
 
+    def test_add_user_to_archived_project(self):
+        user_to_add = UserFactory.create()
+        project = ProjectFactory.create(archived=True)
+        content = self._post(project.organization.slug, project,
+                             {'username': user_to_add.username}, status=403,
+                             count=0)
+
 
 class ProjectUsersDetailAPITest(UserTestCase):
     def setUp(self):
@@ -252,17 +259,32 @@ class ProjectUsersDetailAPITest(UserTestCase):
         role = ProjectRole.objects.get(project=project, user=user)
         assert role.role == 'PU'
 
+    def test_update_user_with_archived_project(self):
+        user = UserFactory.create()
+        project = ProjectFactory.create(add_users=[user], archived=True)
+        self._patch(project.organization.slug, project.slug,
+                    user.username, {'role': 'PM'}, status=403)
+        role = ProjectRole.objects.get(project=project, user=user)
+        assert role.role == 'PU'
+
     def test_delete_user(self):
         user = UserFactory.create()
         project = ProjectFactory.create(add_users=[user])
         self._delete(project.organization.slug, project, user.username,
                      status=204, count=0)
+        assert User.objects.filter(username=user.username).exists()
 
     def test_delete_user_with_unauthorized_user(self):
         user = UserFactory.create()
         project = ProjectFactory.create(add_users=[user])
         self._delete(project.organization.slug, project, user.username,
                      auth=AnonymousUser(), status=403, count=1)
+
+    def test_delete_user_in_archived_project(self):
+        user = UserFactory.create()
+        project = ProjectFactory.create(add_users=[user], archived=True)
+        self._delete(project.organization.slug, project, user.username,
+                     status=403, count=1)
 
 
 class OrganizationProjectListAPITest(UserTestCase):
@@ -607,6 +629,14 @@ class ProjectCreateAPITest(UserTestCase):
         }
         content = self._post('namati', data, status=400, count=0)
         assert content['name'][0] == _('This field is required.')
+
+    def test_create_project_in_archived_organization(self):
+        OrganizationFactory.create(slug='habitat', archived=True)
+        data = {
+            'name': 'Project',
+            'description': 'Project description',
+        }
+        self._post('habitat', data, status=403, count=0)
 
 
 class ProjectDetailAPITest(UserTestCase):

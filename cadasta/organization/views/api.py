@@ -36,6 +36,8 @@ class OrganizationDetail(APIPermissionRequiredMixin,
                 return ('org.update', 'org.archive')
             elif is_archived and (is_archived != new_archived):
                 return ('org.update', 'org.unarchive')
+            elif is_archived and (is_archived == new_archived):
+                return False
         return 'org.update'
 
     queryset = Organization.objects.all()
@@ -65,7 +67,7 @@ class OrganizationUsers(APIPermissionRequiredMixin,
 class OrganizationUsersDetail(APIPermissionRequiredMixin,
                               mixins.OrganizationRoles,
                               generics.RetrieveUpdateDestroyAPIView):
-    def update_permissions(self, request):
+    def update_permissions(self, view, request):
         if self.org.archived:
             return False
         return 'org.users.remove'

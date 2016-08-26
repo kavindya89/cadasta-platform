@@ -372,8 +372,10 @@ PROJECT_ADD_TEMPLATES = {
 
 
 def add_wizard_permission_required(self, view, request):
-    if Organization.objects.get(slug=self.kwargs.get('organization')).archived:
-        return False
+    if 'organization' in self.kwargs:
+        if Organization.objects.get(
+                slug=self.kwargs.get('organization')).archived:
+            return False
     if request.method != 'POST':
         return ()
     session = request.session.get('wizard_project_add_wizard', None)

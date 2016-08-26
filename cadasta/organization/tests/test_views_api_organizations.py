@@ -282,6 +282,10 @@ class OrganizationDetailAPITest(UserTestCase):
         org.refresh_from_db()
         assert org.archived
 
+        data = {'name': 'Testing Permissions Denied'}
+        self._patch(org.slug, data, status=403)
+        assert org.name == 'Org name'
+
     def test_archive_with_unauthorized_user(self):
         org = OrganizationFactory.create(slug='org')
         data = {'archived': True}
@@ -395,6 +399,12 @@ class OrganizationUsersAPITest(UserTestCase):
                              status=404)
         assert content['detail'] == _("Organization not found.")
 
+    def test_add_user_to_archived_organization(self):
+        new_user = UserFactory.create()
+        org = OrganizationFactory.create(archived=True)
+        content = self._post(org, {'username': new_user.username}, status=403)
+        assert content['detail'] == PermissionDenied.default_detail
+
 
 class OrganizationUsersDetailAPITest(UserTestCase):
     def setUp(self):
@@ -495,6 +505,14 @@ class OrganizationUsersDetailAPITest(UserTestCase):
         role = OrganizationRole.objects.get(organization=org, user=user)
         assert role.admin is True
 
+    def test_update_user_in_archived_organization(self):
+        user = UserFactory.create()
+        org = OrganizationFactory.create(add_users=[user], archived=True)
+        self._patch(org, user.username, data={'roles': {'admin': True}},
+                    status=403)
+        role = OrganizationRole.objects.get(organization=org, user=user)
+        assert role.admin is False
+
     def test_remove_user(self):
         user = UserFactory.create()
         user_to_remove = UserFactory.create()
@@ -532,3 +550,11 @@ class OrganizationUsersDetailAPITest(UserTestCase):
         user = UserFactory.create()
         content = self._delete('some-org', user.username, status=404)
         assert content['detail'] == "Organization not found."
+
+    def test_remove_user_from_archived_organization(self):
+        user = UserFactory.create()
+        user_two = UserFactory.create()
+        org = OrganizationFactory.create(add_users=[user, user_two],
+                                         archived=True)
+        content = self._delete(org, user.username, status=403, count=2)
+        assert content['detail'] == PermissionDenied.default_detail
