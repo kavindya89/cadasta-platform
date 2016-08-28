@@ -108,6 +108,16 @@ class OrgArchiveView(LoginPermissionRequiredMixin,
             kwargs={'slug': self.object.slug}
         )
 
+    def archive(self):
+        assert hasattr(self, 'do_archive'), "Please set do_archive attribute"
+        self.object = self.get_object()
+        self.object.archived = self.do_archive
+        self.object.save()
+        for project in self.object.projects.all():
+            project.archived = self.do_archive
+            project.save()
+        return redirect(self.get_success_url())
+
 
 class OrganizationArchive(OrgArchiveView):
     permission_required = 'org.archive'
@@ -174,15 +184,15 @@ class OrganizationMembersEdit(mixins.OrganizationMixin,
                               mixins.ProjectCreateCheckMixin,
                               base_generic.edit.FormMixin,
                               generic.DetailView):
-    slug_field = 'username'
-    slug_url_kwarg = 'username'
-    template_name = 'organization/organization_members_edit.html'
-    form_class = forms.EditOrganizationMemberForm
-
     def update_permissions(self, view, request):
         if self.get_organization().archived:
             return False
         return 'org.users.edit'
+
+    slug_field = 'username'
+    slug_url_kwarg = 'username'
+    template_name = 'organization/organization_members_edit.html'
+    form_class = forms.EditOrganizationMemberForm
 
     permission_required = update_permissions
     permission_denied_message = error_messages.ORG_USERS_EDIT
@@ -242,7 +252,12 @@ class OrganizationMembersEdit(mixins.OrganizationMixin,
 class OrganizationMembersRemove(mixins.OrganizationMixin,
                                 LoginPermissionRequiredMixin,
                                 generic.DeleteView):
-    permission_required = 'org.users.remove'
+    def update_permissions(self, view, request):
+        if self.get_organization().archived:
+            return False
+        return 'org.users.remove'
+
+    permission_required = update_permissions
     permission_denied_message = error_messages.ORG_USERS_REMOVE
 
     def get_object(self):
@@ -280,6 +295,11 @@ class UserList(LoginPermissionRequiredMixin, generic.ListView):
 
 
 class UserActivation(LoginPermissionRequiredMixin, base_generic.View):
+    def update_permissions(self, view, request):
+        if self.get_organization().archived:
+            return False
+        return 'users.update'
+
     permission_required = 'user.update'
     permission_denied_message = error_messages.USERS_UPDATE
     new_state = None
@@ -381,6 +401,11 @@ def add_wizard_permission_required(self, view, request):
     session = request.session.get('wizard_project_add_wizard', None)
     if session is None or 'details' not in session['step_data']:
         return ()
+    elif 'details' in session['step_data']:
+        if Organization.objects.get(
+                slug=session['step_data']['details']['details-organization'][0]
+                ).archived:
+            return False
     else:
         return 'project.create'
 
@@ -518,8 +543,14 @@ class ProjectAddWizard(SuperUserCheckMixin,
 class ProjectEdit(mixins.ProjectMixin,
                   mixins.ProjectAdminCheckMixin,
                   LoginPermissionRequiredMixin):
+
+    def update_permissions(self, view, request):
+        if self.get_object().archived:
+            return False
+        return 'project.update'
+
     model = Project
-    permission_required = 'project.update'
+    permission_required = update_permissions
 
     def get_object(self):
         return self.get_project()
@@ -580,7 +611,12 @@ class ProjectArchive(ProjectEdit, ArchiveMixin, generic.DetailView):
 
 
 class ProjectUnarchive(ProjectEdit, ArchiveMixin, generic.DetailView):
-    permission_required = 'project.unarchive'
+    def update_permissions(self, view, request):
+        if self.get_object().organization.archived:
+            return False
+        return 'project.unarchive'
+
+    permission_required = update_permissions
     permission_denied_message = error_messages.PROJ_UNARCHIVE
     do_archive = False
 

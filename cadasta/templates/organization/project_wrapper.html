@@ -34,7 +34,7 @@
           <li><a class="edit" href="{% url 'organization:project-edit-permissions' object.organization.slug object.slug %}">{% trans "Edit member permissions" %}</a></li>
           <li role="separator" class="divider"></li>
           <li><a href="{% url 'organization:project-download' object.organization.slug object.slug %}" data-toggle="modal">{% trans "Download data" %}</a></li>
-          {% if is_superuser %}
+          
           <li role="separator" class="divider"></li>
           <li>
             {% if object.archived %}
@@ -43,7 +43,7 @@
             <a class="archive" href="#archive_confirm" data-toggle="modal">{% trans "Archive project" %}</a>
             {% endif %}
           </li>
-          {% endif %}
+          
         </ul>
       </div>
       {% endif %}

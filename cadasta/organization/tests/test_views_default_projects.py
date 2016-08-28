@@ -528,6 +528,40 @@ class ProjectAddTest(UserTestCase):
         )
         assert details_response.status_code == 200
 
+    def test_flow_with_archived_organization(self):
+        org = OrganizationFactory.create(
+            slug='archived-org', archived=True, add_users=[self.users[0]])
+        OrganizationRole.objects.create(organization=org,
+                                        user=self.users[0],
+                                        admin=True)
+        DETAILS_POST_DATA_ARCHIVE = {
+            'project_add_wizard-current_step': 'details',
+            'details-organization': 'archived-org',
+            'details-name': 'Test Project',
+            'details-description': 'This is a test project',
+            'details-access': 'on',
+            'details-url': 'http://www.test.org',
+            'details-contacts-TOTAL_FORMS': 1,
+            'details-contacts-INITIAL_FORMS': 0,
+            'details-contacts-0-name': "John Lennon",
+            'details-contacts-0-email': 'john@beatles.co.uk',
+            'details-contacts-0-tel': ''
+        }
+
+        self.client.force_login(self.users[0])
+        extents_response = self.client.post(
+            reverse('project:add'), self.EXTENTS_POST_DATA
+        )
+        assert extents_response.status_code == 200
+        details_response = self.client.post(
+            reverse('project:add'), DETAILS_POST_DATA_ARCHIVE
+        )
+        assert details_response.status_code == 200
+        permissions_response = self.client.post(
+            reverse('project:add'), self.PERMISSIONS_POST_DATA
+        )
+        assert permissions_response.status_code == 302
+
     def test_full_flow_invalid_xlsform(self):
         self.client.force_login(self.users[0])
         extents_response = self.client.post(
@@ -713,6 +747,21 @@ class ProjectEditGeometryTest(UserTestCase):
         self.project.refresh_from_db()
         assert self.project.extent is None
 
+    def test_post_with_archived_project(self):
+        user = UserFactory.create()
+        assign_user_policies(user, self.policy)
+        proj = ProjectFactory.create(archived=True)
+        setattr(self.request, 'user', user)
+        setattr(self.request, 'method', 'POST')
+        setattr(self.request, 'POST', self.post_data)
+        setattr(self.request, 'session', 'session')
+        self.messages = FallbackStorage(self.request)
+        setattr(self.request, '_messages', self.messages)
+        response = self.view(self.request,
+                             organization=proj.organization.slug,
+                             project=proj.slug)
+        assert response.status_code == 302
+
 
 @pytest.mark.usefixtures('make_dirs')
 class ProjectEditDetailsTest(UserTestCase):
@@ -813,6 +862,21 @@ class ProjectEditDetailsTest(UserTestCase):
         response = self.req(status=302)
         assert '/account/login/' in response['location']
 
+    def test_get_with_archived_project(self):
+        proj = ProjectFactory.create(archived=True)
+        user = UserFactory.create()
+        assign_user_policies(user, self.policy)
+        setattr(self.request, 'user', user)
+        setattr(self.request, 'method', 'GET')
+        setattr(self.request, 'session', 'session')
+        self.messages = FallbackStorage(self.request)
+        setattr(self.request, '_messages', self.messages)
+
+        response = self.view(self.request,
+                             organization=proj.organization.slug,
+                             project=proj.slug)
+        assert response.status_code == 302
+
     def test_post_with_authorized_user(self):
         user = UserFactory.create()
         assign_user_policies(user, self.policy)
@@ -886,6 +950,22 @@ class ProjectEditDetailsTest(UserTestCase):
         self.project.refresh_from_db()
         assert self.project.name != self.post_data['name']
         assert self.project.description != self.post_data['description']
+
+    def test_post_with_archived_project(self):
+        proj = ProjectFactory.create(archived=True)
+        user = UserFactory.create()
+        assign_user_policies(user, self.policy)
+        setattr(self.request, 'user', user)
+        setattr(self.request, 'method', 'POST')
+        setattr(self.request, 'POST', self.post_data)
+        setattr(self.request, 'session', 'session')
+        self.messages = FallbackStorage(self.request)
+        setattr(self.request, '_messages', self.messages)
+
+        response = self.view(self.request,
+                             organization=proj.organization.slug,
+                             project=proj.slug)
+        assert response.status_code == 302
 
 
 class ProjectEditPermissionsTest(UserTestCase):
@@ -968,6 +1048,20 @@ class ProjectEditPermissionsTest(UserTestCase):
         response = self.req(status=302)
         assert '/account/login/' in response['location']
 
+    def test_get_with_archived_project(self):
+        proj = ProjectFactory.create(archived=True)
+        user = UserFactory.create()
+        assign_user_policies(user, self.policy)
+        setattr(self.request, 'user', user)
+        setattr(self.request, 'method', 'GET')
+        setattr(self.request, 'session', 'session')
+        self.messages = FallbackStorage(self.request)
+        setattr(self.request, '_messages', self.messages)
+        response = self.view(self.request,
+                             organization=proj.organization.slug,
+                             project=proj.slug)
+        assert response.status_code == 302
+
     def test_post_with_authorized_user(self):
         user = UserFactory.create()
         assign_user_policies(user, self.policy)
@@ -999,6 +1093,21 @@ class ProjectEditPermissionsTest(UserTestCase):
 
         self.project_role.refresh_from_db()
         assert self.project_role.role == 'DC'
+
+    def test_post_with_archived_project(self):
+        proj = ProjectFactory.create(archived=True)
+        user = UserFactory.create()
+        assign_user_policies(user, self.policy)
+        setattr(self.request, 'user', user)
+        setattr(self.request, 'method', 'POST')
+        setattr(self.request, 'POST', self.post_data)
+        setattr(self.request, 'session', 'session')
+        self.messages = FallbackStorage(self.request)
+        setattr(self.request, '_messages', self.messages)
+        response = self.view(self.request,
+                             organization=proj.organization.slug,
+                             project=proj.slug)
+        assert response.status_code == 302
 
 
 class ProjectArchiveTest(UserTestCase):
