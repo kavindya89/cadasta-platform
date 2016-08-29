@@ -300,7 +300,7 @@ class UserActivation(LoginPermissionRequiredMixin, base_generic.View):
             return False
         return 'users.update'
 
-    permission_required = 'user.update'
+    permission_required = update_permissions
     permission_denied_message = error_messages.USERS_UPDATE
     new_state = None
 
