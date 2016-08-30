@@ -475,6 +475,7 @@ class OrganizationArchiveTest(UserTestCase):
 
         response = self.view(self.request, slug=self.org.slug)
         self.org.refresh_from_db()
+        project.refresh_from_db()
 
         assert response.status_code == 302
         assert ('/organizations/{}/'.format(self.org.slug)
@@ -538,6 +539,22 @@ class OrganizationUnarchiveTest(UserTestCase):
         assert response.status_code == 302
         assert '/account/login/' in response['location']
         assert self.org.archived is True
+
+    def test_unarchive_cascade_to_projects(self):
+        user = UserFactory.create()
+        assign_user_policies(user, self.policy)
+        setattr(self.request, 'user', user)
+        project = ProjectFactory.create(organization=self.org, archived=True)
+
+        response = self.view(self.request, slug=self.org.slug)
+        self.org.refresh_from_db()
+        project.refresh_from_db()
+
+        assert response.status_code == 302
+        assert ('/organizations/{}/'.format(self.org.slug)
+                in response['location'])
+        assert self.org.archived is False
+        assert project.archived is False
 
 
 class OrganizationMembersTest(UserTestCase):

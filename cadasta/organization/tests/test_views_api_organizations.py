@@ -10,7 +10,7 @@ from tutelary.models import Policy, assign_user_policies
 from core.tests.base_test_case import UserTestCase
 from accounts.models import User
 from accounts.tests.factories import UserFactory
-from .factories import OrganizationFactory, clause
+from .factories import OrganizationFactory, clause, ProjectFactory
 from ..models import Organization, OrganizationRole
 from ..views import api
 
@@ -277,10 +277,13 @@ class OrganizationDetailAPITest(UserTestCase):
 
     def test_archive(self):
         org = OrganizationFactory.create(name='Org name', slug='org')
+        proj = ProjectFactory.create(organization=org)
         data = {'archived': True}
         self._patch(org.slug, data, status=200)
         org.refresh_from_db()
+        proj.refresh_from_db()
         assert org.archived
+        assert proj.archived
 
         data = {'name': 'Testing Permissions Denied'}
         self._patch(org.slug, data, status=403)
@@ -295,10 +298,13 @@ class OrganizationDetailAPITest(UserTestCase):
 
     def test_unarchive(self):
         org = OrganizationFactory.create(slug='org', archived=True)
+        proj = ProjectFactory.create(organization=org, archived=True)
         data = {'archived': False}
         self._patch(org.slug, data, status=200)
         org.refresh_from_db()
+        proj.refresh_from_db()
         assert not org.archived
+        assert not proj.archived
 
     def test_unarchive_unauthorized_user(self):
         org = OrganizationFactory.create(slug='org', archived=True)

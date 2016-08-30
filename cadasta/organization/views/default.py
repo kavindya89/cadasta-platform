@@ -295,12 +295,7 @@ class UserList(LoginPermissionRequiredMixin, generic.ListView):
 
 
 class UserActivation(LoginPermissionRequiredMixin, base_generic.View):
-    def update_permissions(self, view, request):
-        if self.get_organization().archived:
-            return False
-        return 'users.update'
-
-    permission_required = update_permissions
+    permission_required = 'users.update'
     permission_denied_message = error_messages.USERS_UPDATE
     new_state = None
 
