@@ -295,7 +295,7 @@ class UserList(LoginPermissionRequiredMixin, generic.ListView):
 
 
 class UserActivation(LoginPermissionRequiredMixin, base_generic.View):
-    permission_required = 'users.update'
+    permission_required = 'user.update'
     permission_denied_message = error_messages.USERS_UPDATE
     new_state = None
 
