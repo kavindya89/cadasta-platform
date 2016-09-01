@@ -736,6 +736,25 @@ class ProjectDetailAPITest(UserTestCase):
     def test_get_public_project_that_does_not_exist(self):
         self._test_get_public_project(self.user, 404, non_existent=True)
 
+    def test_get_archived_project_with_unauthorized_user(self):
+        organization, project = self._test_objs()
+        project.archived = True
+        project.save()
+        content = self._get('namati', project.slug, user=AnonymousUser(),
+                            status=403)
+        assert content['detail'] == PermissionDenied.default_detail
+
+    def test_get_archived_project_with_admin_user(self):
+        organization, project = self._test_objs()
+        project.archived = True
+        project.save()
+        OrganizationRole.objects.create(organization=organization,
+                                        user=self.user, admin=True)
+        content = self._get('namati', project.slug, user=self.user,
+                            status=200)
+        assert content['id'] == project.id
+        assert 'users' in content
+
     def _test_get_private_project(self, status=None, user=None,
                                   check_ok=False, check_error=False,
                                   make_org_member=False,
@@ -802,7 +821,7 @@ class ProjectDetailAPITest(UserTestCase):
         organization, project = self._test_objs()
         self._patch('namati', project, {'name': 'OPDP'}, status=403,
                     user=AnonymousUser())
-        assert project.name == 'Test Project'
+        assert project.name != 'OPDP'
 
     def test_invalid_update(self):
         organization, project = self._test_objs()
@@ -816,7 +835,7 @@ class ProjectDetailAPITest(UserTestCase):
         assert project.archived
 
         self._patch('namati', project, {'name': 'OPDP'}, status=403)
-        assert project.name == 'Test Project'
+        assert project.name != 'OPDP'
 
     def test_unarchive(self):
         organization, project = self._test_objs(archived=True)

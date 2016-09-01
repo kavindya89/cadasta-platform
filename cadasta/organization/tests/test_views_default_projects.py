@@ -62,6 +62,8 @@ class ProjectListTest(UserTestCase):
         self.priv_proj3 = ProjectFactory.create(
             organization=self.ok_org2, access='private'
         )
+        self.archived_proj = ProjectFactory.create(
+            organization=self.ok_org2, archived=True)
         ProjectFactory.create(organization=self.unauth_org, access='private')
 
         # Note: no project.view_private -- that's controlled by
@@ -138,6 +140,15 @@ class ProjectListTest(UserTestCase):
         self._get(status=200, make_org_member=[self.ok_org1, self.ok_org2],
                   projs=self.projs + self.unauth_projs + [
                       self.priv_proj1, self.priv_proj2, self.priv_proj3
+                  ])
+
+    def test_get_with_org_admin(self):
+        OrganizationRole.objects.create(
+            organization=self.ok_org2, user=self.user).admin = True
+        self._get(status=200, make_org_member=[self.ok_org1, self.ok_org2],
+                  projs=self.projs + self.unauth_projs + [
+                      self.priv_proj1, self.priv_proj2, self.priv_proj3,
+                      self.archived_proj
                   ])
 
     def test_get_with_superuser(self):
@@ -333,6 +344,25 @@ class ProjectDashboardTest(UserTestCase):
         )
         self._check_render(response, prj,
                            is_superuser=True, is_administrator=True)
+
+    def test_get_archived_project_with_unauthorized_user(self):
+        self.project1.archived = True
+        self.project1.save()
+        response = self._get(self.project1, status=302)
+        self._check_fail()
+
+    def test_get_archived_project_with_org_admin(self):
+        org_admin = UserFactory.create()
+        OrganizationRole.objects.create(
+            organization=self.project1.organization,
+            user=org_admin,
+            admin=True
+        )
+        self.project1.archived = True
+        self.project1.save()
+        response = self._get(self.project1, user=org_admin, status=200)
+        self._check_render(response, self.project1,
+                           is_superuser=False, is_administrator=True)
 
 
 @pytest.mark.usefixtures('make_dirs')
@@ -704,6 +734,17 @@ class ProjectEditGeometryTest(UserTestCase):
 
         assert expected == content
 
+    def test_get_with_archived_project(self):
+        user = UserFactory.create()
+        assign_user_policies(user, self.policy)
+        self.project.archived = True
+        self.project.save()
+
+        response = self.req(user=user, status=302)
+        content = response.content.decode('utf-8')
+        assert ("You don't have permission to update this project"
+                in [str(m) for m in get_messages(self.request)])
+
     def test_get_with_unauthorized_user(self):
         user = UserFactory.create()
         self.req(user=user, status=302)
@@ -748,19 +789,15 @@ class ProjectEditGeometryTest(UserTestCase):
         assert self.project.extent is None
 
     def test_post_with_archived_project(self):
+        self.project.archived = True
+        self.project.save()
         user = UserFactory.create()
         assign_user_policies(user, self.policy)
-        proj = ProjectFactory.create(archived=True)
-        setattr(self.request, 'user', user)
-        setattr(self.request, 'method', 'POST')
-        setattr(self.request, 'POST', self.post_data)
-        setattr(self.request, 'session', 'session')
-        self.messages = FallbackStorage(self.request)
-        setattr(self.request, '_messages', self.messages)
-        response = self.view(self.request,
-                             organization=proj.organization.slug,
-                             project=proj.slug)
-        assert response.status_code == 302
+        response = self.req(user=user, method='POST', status=302)
+        assert '/' in response['location']
+
+        self.project.refresh_from_db()
+        assert self.project.extent is None
 
 
 @pytest.mark.usefixtures('make_dirs')
@@ -863,19 +900,13 @@ class ProjectEditDetailsTest(UserTestCase):
         assert '/account/login/' in response['location']
 
     def test_get_with_archived_project(self):
-        proj = ProjectFactory.create(archived=True)
+        self.project.archived = True
+        self.project.save()
         user = UserFactory.create()
         assign_user_policies(user, self.policy)
-        setattr(self.request, 'user', user)
-        setattr(self.request, 'method', 'GET')
-        setattr(self.request, 'session', 'session')
-        self.messages = FallbackStorage(self.request)
-        setattr(self.request, '_messages', self.messages)
 
-        response = self.view(self.request,
-                             organization=proj.organization.slug,
-                             project=proj.slug)
-        assert response.status_code == 302
+        response = self.req(user=user, status=302)
+        assert response['location'] == '/'
 
     def test_post_with_authorized_user(self):
         user = UserFactory.create()
@@ -952,20 +983,15 @@ class ProjectEditDetailsTest(UserTestCase):
         assert self.project.description != self.post_data['description']
 
     def test_post_with_archived_project(self):
-        proj = ProjectFactory.create(archived=True)
         user = UserFactory.create()
         assign_user_policies(user, self.policy)
-        setattr(self.request, 'user', user)
-        setattr(self.request, 'method', 'POST')
-        setattr(self.request, 'POST', self.post_data)
-        setattr(self.request, 'session', 'session')
-        self.messages = FallbackStorage(self.request)
-        setattr(self.request, '_messages', self.messages)
+        self.project.archived = True
+        self.project.save()
+        response = self.req(user=user, method='POST', status=302)
 
-        response = self.view(self.request,
-                             organization=proj.organization.slug,
-                             project=proj.slug)
-        assert response.status_code == 302
+        self.project.refresh_from_db()
+        assert self.project.name != self.post_data['name']
+        assert self.project.description != self.post_data['description']
 
 
 class ProjectEditPermissionsTest(UserTestCase):
@@ -1049,18 +1075,14 @@ class ProjectEditPermissionsTest(UserTestCase):
         assert '/account/login/' in response['location']
 
     def test_get_with_archived_project(self):
-        proj = ProjectFactory.create(archived=True)
         user = UserFactory.create()
         assign_user_policies(user, self.policy)
-        setattr(self.request, 'user', user)
-        setattr(self.request, 'method', 'GET')
-        setattr(self.request, 'session', 'session')
-        self.messages = FallbackStorage(self.request)
-        setattr(self.request, '_messages', self.messages)
-        response = self.view(self.request,
-                             organization=proj.organization.slug,
-                             project=proj.slug)
-        assert response.status_code == 302
+        self.project.archived = True
+        self.project.save()
+
+        self.req(user=user, status=302)
+        assert ("You don't have permission to update this project"
+                in [str(m) for m in get_messages(self.request)])
 
     def test_post_with_authorized_user(self):
         user = UserFactory.create()
@@ -1095,19 +1117,14 @@ class ProjectEditPermissionsTest(UserTestCase):
         assert self.project_role.role == 'DC'
 
     def test_post_with_archived_project(self):
-        proj = ProjectFactory.create(archived=True)
+        self.project.archived = True
+        self.project.save()
         user = UserFactory.create()
         assign_user_policies(user, self.policy)
-        setattr(self.request, 'user', user)
-        setattr(self.request, 'method', 'POST')
-        setattr(self.request, 'POST', self.post_data)
-        setattr(self.request, 'session', 'session')
-        self.messages = FallbackStorage(self.request)
-        setattr(self.request, '_messages', self.messages)
-        response = self.view(self.request,
-                             organization=proj.organization.slug,
-                             project=proj.slug)
-        assert response.status_code == 302
+        response = self.req(method='POST', status=302)
+
+        self.project_role.refresh_from_db()
+        assert self.project_role.role == 'DC'
 
 
 class ProjectArchiveTest(UserTestCase):
@@ -1199,7 +1216,7 @@ class ProjectUnarchiveTest(UserTestCase):
                          organization=self.prj.organization.slug,
                          project=self.prj.slug)
 
-    def test_archive_with_authorized_user(self):
+    def test_unarchive_with_authorized_user(self):
         user = UserFactory.create()
         assign_user_policies(user, self.policy)
         response = self.get(user)
@@ -1211,7 +1228,7 @@ class ProjectUnarchiveTest(UserTestCase):
             self.prj.organization.slug, self.prj.slug) in response['location'])
         assert self.prj.archived is False
 
-    def test_archive_with_unauthorized_user(self):
+    def test_unarchive_with_unauthorized_user(self):
         user = UserFactory.create()
         response = self.get(user)
 
@@ -1221,12 +1238,25 @@ class ProjectUnarchiveTest(UserTestCase):
                 in [str(m) for m in get_messages(self.request)])
         assert self.prj.archived is True
 
-    def test_archive_with_unauthenticated_user(self):
+    def test_unarchive_with_unauthenticated_user(self):
         response = self.get()
         self.prj.refresh_from_db()
 
         assert response.status_code == 302
         assert '/account/login/' in response['location']
+        assert self.prj.archived is True
+
+    def test_unarchive_with_archived_organization(self):
+        user = UserFactory.create()
+        assign_user_policies(user, self.policy)
+        self.prj.organization.archived = True
+        self.prj.organization.save()
+        self.prj.organization.refresh_from_db()
+        response = self.get(user)
+
+        self.prj.refresh_from_db()
+
+        assert response.status_code == 302
         assert self.prj.archived is True
 
 

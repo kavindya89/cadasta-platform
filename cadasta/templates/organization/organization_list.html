@@ -29,7 +29,7 @@
 {% block content %}
 
 <!-- Organization index table -->
-<table class="table table-hover datatable" data-paging-type="simple">
+<table class="table table-hover datatable" id='example' data-paging-type="simple">
   <thead>
     <tr>
       <th class="col-md-10">{% trans "Organization" %}</th>
@@ -46,11 +46,11 @@
       </div>
       {% endif %}
       <div class="org-text">
+        <h4>{{ org.name }}
         {% if org.archived %}
-        <h4>{{ org.name }}<span class="label label-danger">Archived</span></h4>
-        {% else %}
-        <h4>{{ org.name }}</h4>
+          <span class="label label-danger">Archived</span>
         {% endif %}
+        </h4>
         {% if org.description %}
           <p>{{ org.description }}</p>
         {% endif %}

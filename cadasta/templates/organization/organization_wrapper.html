@@ -16,15 +16,14 @@
     <a class="index-link visible-md-inline visible-lg-inline" href="{% url 'organization:list' %}">
       <span class="glyphicon glyphicon-step-backward" aria-hidden="true"></span>
     </a>
-    {% if organization.archived %}
-      <h1>
-        {{ organization.name }}<span class="label label-danger">Archived</span>
-      </h1>
-    {% else %}
       <h1>
         {{ organization.name }}
+        {% if organization.archived %}
+        <span class="label label-danger">
+          Archived
+        </span>
+        {% endif %}
       </h1>
-    {% endif %}
 
     <div class="top-btn pull-right">
 

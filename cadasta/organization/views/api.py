@@ -28,6 +28,19 @@ class OrganizationList(APIPermissionRequiredMixin, generics.ListCreateAPIView):
 
 class OrganizationDetail(APIPermissionRequiredMixin,
                          generics.RetrieveUpdateAPIView):
+    def view_actions(self, request):
+        is_archived = self.get_object().archived
+        if is_archived:
+            user = self.request.user
+            if user.is_anonymous():
+                return False
+            org_role = OrganizationRole.objects.filter(
+                organization=self.get_object(), user=user)
+            print(org_role)
+            if len(org_role) == 0 or not org_role[0].admin:
+                return False
+        return 'org.view'
+
     def patch_actions(self, request):
         if hasattr(request, 'data'):
             is_archived = self.get_object().archived
@@ -44,7 +57,7 @@ class OrganizationDetail(APIPermissionRequiredMixin,
     serializer_class = serializers.OrganizationSerializer
     lookup_field = 'slug'
     permission_required = {
-        'GET': 'org.view',
+        'GET': view_actions,
         'PATCH': patch_actions,
     }
 
@@ -160,6 +173,16 @@ class ProjectDetail(APIPermissionRequiredMixin,
                     mixins.OrganizationMixin,
                     generics.RetrieveUpdateDestroyAPIView):
     def get_actions(self, request):
+        is_archived = self.get_object().archived
+        if is_archived:
+            user = self.request.user
+            if user.is_anonymous():
+                return False
+            org_role = OrganizationRole.objects.filter(
+                organization=self.get_object().organization, user=user)
+            print(org_role)
+            if len(org_role) == 0 or not org_role[0].admin:
+                return False
         if self.get_object().public():
             return 'project.view'
         else:

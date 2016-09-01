@@ -86,6 +86,9 @@ class OrganizationTest(FunctionalTest):
         archive = page.click_on_archive_and_confirm()
         assert archive == "Unarchive organization"
 
+        # check for label
+        # try clicking on lots of other things
+
         archive = page.click_on_archive_and_confirm(unarchive=True)
         assert archive == "Archive organization"
 

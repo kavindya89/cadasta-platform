@@ -67,12 +67,28 @@ class OrganizationListTest(UserTestCase):
         assert expected == content
 
     def test_get_with_user(self):
+        archived_org = OrganizationFactory.create(
+            archived=True, add_users=[self.user])
         self._get(self.orgs, status=200)
 
     def test_get_without_user(self):
-        self._get(Organization.objects.all(), user=AnonymousUser(), status=200)
+        archived_org = OrganizationFactory.create(
+            archived=True, add_users=[self.user])
+        self._get(self.orgs, user=AnonymousUser(), status=200)
+
+    def test_get_archived_with_admin_user(self):
+        user = UserFactory.create()
+        archived_org = OrganizationFactory.create(
+            archived=True, add_users=[self.user])
+        OrganizationRole.objects.create(
+            organization=archived_org, user=user).admin = True
+        orgs = self.orgs.extend(archived_org)
+        # this should be adjusted based on filters
+        self._get(orgs, user=user, status=200)
 
     def test_get_with_superuser(self):
+        archived_org = OrganizationFactory.create(
+            archived=True, add_users=[self.user])
         superuser = UserFactory.create()
         self.superuser_role = Role.objects.get(name='superuser')
         superuser.assign_policies(self.superuser_role)
@@ -262,6 +278,20 @@ class OrganizationDashboardTest(UserTestCase):
     def test_get_org_with_org_admin(self):
         response = self._get(self.org.slug, user=self.org_admin, status=200)
         self._check_ok(response, member=True, is_administrator=True)
+
+    def test_get_archived_org_with_unauthorized_user(self):
+        self.org.archived = True
+        self.org.save()
+        self.org.refresh_from_db()
+        response = self._get(self.org.slug, user=AnonymousUser(), status=302)
+
+    def test_get_archived_org_with_org_admin(self):
+        self.org.archived = True
+        self.org.save()
+        self.org.refresh_from_db()
+        response = self._get(self.org.slug, user=self.org_admin, status=200)
+        self._check_ok(response, org=self.org,
+                       member=True, is_administrator=True)
 
 
 class OrganizationEditTest(UserTestCase):
@@ -732,8 +762,8 @@ class OrganizationMembersAddTest(UserTestCase):
             organization=self.org, user=user_to_add).exists() is False
 
     def test_post_with_archived_organization(self):
-        org = OrganizationFactory.create(archived=True)
         user = UserFactory.create()
+        org = OrganizationFactory.create(archived=True, add_users=[user])
         user_to_add = UserFactory.create()
         assign_user_policies(user, self.policy)
         setattr(self.request, 'user', user)
@@ -742,6 +772,8 @@ class OrganizationMembersAddTest(UserTestCase):
 
         response = self.view(self.request, slug=org.slug)
         assert response.status_code == 302
+        assert OrganizationRole.objects.filter(
+            organization=org, user=user_to_add).exists() is False
 
 
 class OrganizationMembersEditTest(UserTestCase):

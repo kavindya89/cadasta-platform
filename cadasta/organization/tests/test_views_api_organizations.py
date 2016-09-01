@@ -253,6 +253,20 @@ class OrganizationDetailAPITest(UserTestCase):
         content = self._get('some-org', status=404)
         assert content['detail'] == "Organization not found."
 
+    def test_get_archived_organization_with_authorized_user(self):
+        org = OrganizationFactory.create(slug='org', archived=True)
+        OrganizationRole.objects.create(
+            organization=org, user=self.user, admin=True)
+        content = self._get(org.slug, status=200)
+        assert content['id'] == org.id
+        assert 'users' in content
+
+    def test_get_archived_organization_with_unauthorized_user(self):
+        org = OrganizationFactory.create(slug='org', archived=True)
+        content = self._get(org.slug, user=AnonymousUser(), status=403)
+        print(content)
+        assert 'users' not in content
+
     def test_valid_update(self):
         org = OrganizationFactory.create(slug='org')
         data = {'name': 'Org Name'}
@@ -285,9 +299,9 @@ class OrganizationDetailAPITest(UserTestCase):
         assert org.archived
         assert proj.archived
 
-        data = {'name': 'Testing Permissions Denied'}
+        data = {'name': 'Updated Org Name'}
         self._patch(org.slug, data, status=403)
-        assert org.name == 'Org name'
+        assert org.name != data.get('name')
 
     def test_archive_with_unauthorized_user(self):
         org = OrganizationFactory.create(slug='org')

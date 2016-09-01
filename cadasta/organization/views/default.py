@@ -6,6 +6,7 @@ from django.shortcuts import redirect, get_object_or_404
 import django.views.generic as base_generic
 from django.core.urlresolvers import reverse
 from django.contrib import messages
+from django.contrib.auth.models import AnonymousUser
 
 import formtools.wizard.views as wizard
 
@@ -25,10 +26,23 @@ from .. import messages as error_messages
 
 
 class OrganizationList(PermissionRequiredMixin, generic.ListView):
+    def update_permissions(self, view, request):
+        if self.get_object().archived and not self.is_superuser:
+            if self.request.user.is_anonymous():
+                return False
+            org_admin = OrganizationRole.objects.filter(
+                organization=self.get_object(), user=self.request.user)
+            if len(org_admin) == 0 or not org_admin[0].admin:
+                return False
+        return 'org.view'
+
     model = Organization
     template_name = 'organization/organization_list.html'
     permission_required = 'org.list'
     permission_filter_queryset = ('org.view',)
+
+    def get_queryset(self):
+        return Organization.objects.filter(archived=False)
 
 
 class OrganizationAdd(LoginPermissionRequiredMixin, generic.CreateView):
@@ -56,9 +70,20 @@ class OrganizationDashboard(PermissionRequiredMixin,
                             mixins.OrgAdminCheckMixin,
                             mixins.ProjectCreateCheckMixin,
                             generic.DetailView):
+    def update_permissions(self, view, request):
+        if self.get_object().archived and not self.is_superuser:
+            if self.request.user.is_anonymous():
+                return False
+            org_admin = OrganizationRole.objects.filter(
+                organization=self.get_object(), user=self.request.user)
+            if len(org_admin) == 0 or not org_admin[0].admin:
+                return False
+        return 'org.view'
+
     model = Organization
     template_name = 'organization/organization_dashboard.html'
-    permission_required = 'org.view'
+    permission_required = update_permissions
+    permission_denied_message = error_messages.ORG_VIEW
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
@@ -144,14 +169,14 @@ class OrganizationMembers(LoginPermissionRequiredMixin,
 class OrganizationMembersAdd(mixins.OrganizationMixin,
                              LoginPermissionRequiredMixin,
                              generic.CreateView):
-    model = OrganizationRole
-    form_class = forms.AddOrganizationMemberForm
-    template_name = 'organization/organization_members_add.html'
-
     def update_permissions(self, view, request):
         if self.get_organization().archived:
             return False
         return 'org.users.add'
+
+    model = OrganizationRole
+    form_class = forms.AddOrganizationMemberForm
+    template_name = 'organization/organization_members_add.html'
 
     permission_required = update_permissions
     permission_denied_message = error_messages.ORG_USERS_ADD
@@ -343,15 +368,22 @@ class ProjectDashboard(PermissionRequiredMixin,
                        mixins.ProjectAdminCheckMixin,
                        mixins.ProjectMixin,
                        generic.DetailView):
-    def get_actions(view, request):
-        if view.get_object().public():
+    def update_permissions(self, view):
+        if self.prj.archived and not self.is_su:
+            if view.user.is_anonymous():
+                return False
+            org_admin = OrganizationRole.objects.filter(
+                organization=self.prj.organization, user=view.user)
+            if len(org_admin) == 0 or not org_admin[0].admin:
+                return False
+        if self.prj.public():
             return 'project.view'
         else:
             return 'project.view_private'
 
     model = Project
     template_name = 'organization/project_dashboard.html'
-    permission_required = {'GET': get_actions}
+    permission_required = {'GET': update_permissions}
     permission_denied_message = error_messages.PROJ_VIEW
 
     def get_context_data(self, **kwargs):

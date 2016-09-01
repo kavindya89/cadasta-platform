@@ -42,7 +42,12 @@
   {% for proj in object_list %}
   <tr class="linked" onclick="window.document.location='{% url 'organization:project-dashboard' organization=proj.organization.slug project=proj.slug %}';">
     <td>
-      <h4>{{ proj.name }}</h4>
+      <h4>{{ proj.name }}
+      {% if proj.archived %}
+          <span class="label label-danger">Archived</span>
+        {% endif %}
+        </h4>
+      </h4>
       <p>{{ proj.description }}</p>
       <p class="visible-xs-block">Organization: {{ proj.organization.name }}</p>
     </td>
