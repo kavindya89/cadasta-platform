@@ -405,3 +405,70 @@ class ProjectResourcesDetailTest(UserTestCase):
         assert 'id' not in content
         self.resource.refresh_from_db()
         assert self.resource.archived is True
+
+
+@pytest.mark.usefixtures('make_dirs')
+# @pytest.mark.usefixtures('clear_temp')
+class ProjectSpatialResourcesTest(UserTestCase):
+
+    def setUp(self):
+        super().setUp()
+
+        self.storage = FakeS3Storage()
+        self.file = open(
+            path + '/resources/tests/files/tracks.gpx', 'rb').read()
+        self.file_name = self.storage.save('resources/tracks.gpx', self.file)
+
+        self.project = ProjectFactory.create()
+        self.view = api.ProjectSpatialResources.as_view()
+        self.url = '/v1/organizations/{org}/projects/{prj}/spatialresources/'
+
+        ResourceFactory.create_batch(
+            2, content_object=self.project, project=self.project)
+
+        self.resource = ResourceFactory.create(
+            content_object=self.project,
+            project=self.project, file=self.file_name,
+            original_file='tracks.gpx', mime_type='text/xml'
+        )
+
+        self.user = UserFactory.create()
+
+        # clauses['clause'].append({
+        #     'effect': '',
+        #     'object': ['resource/*/*/' + self.resource.id],
+        #     'action': ['resource.*']
+        # })
+        policy = Policy.objects.create(
+            name='allow',
+            body=json.dumps(clauses))
+
+        self.user.assign_policies(policy)
+
+    def _get(self, org, prj, query=None, user=None, status=None, count=None):
+        if user is None:
+            user = self.user
+
+        url = self.url.format(org=org, prj=prj)
+        if query is not None:
+            url += '?' + query
+        request = APIRequestFactory().get(url)
+        if query is not None:
+            setattr(request, 'GET', QueryDict(query))
+        force_authenticate(request, user=user)
+        response = self.view(request, organization=org, project=prj).render()
+        content = json.loads(response.content.decode('utf-8'))
+        if status is not None:
+            assert response.status_code == status
+        if count is not None:
+            assert len(content) == count
+        return content
+
+    def test_get_resource(self):
+        content = self._get(self.project.organization.slug,
+                            self.project.slug,
+                            status=200)
+        assert content[0]['id'] == self.resource.id
+        assert content[0]['spatial_resources'] is not None
+        assert content[0]['spatial_resources']['type'] == 'FeatureCollection'
+        assert self.resource.spatial_resources.all().count() == 1

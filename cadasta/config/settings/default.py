@@ -262,6 +262,7 @@ MIME_LOOKUPS = {
     'application/vnd.ms-excel': 'xls',
     'application/vnd.openxmlformats-'
     'officedocument.spreadsheetml.sheet': 'xlsx',
+    'text/xml': 'xml',
     'image/jpeg': 'jpg',
     'image/png': 'png',
     'image/gif': 'gif',

@@ -1,6 +1,7 @@
-from rest_framework import generics, filters
+from rest_framework import filters, generics
 from tutelary.mixins import APIPermissionRequiredMixin
-from .mixins import ProjectResourceMixin
+
+from .mixins import ProjectResourceMixin, ProjectSpatialResourceMixin
 
 
 class ProjectResources(APIPermissionRequiredMixin,
@@ -22,6 +23,7 @@ class ProjectResources(APIPermissionRequiredMixin,
 class ProjectResourcesDetail(APIPermissionRequiredMixin,
                              ProjectResourceMixin,
                              generics.RetrieveUpdateAPIView):
+
     def patch_actions(self, request):
         if hasattr(request, 'data'):
             is_archived = self.get_object().archived
@@ -37,3 +39,19 @@ class ProjectResourcesDetail(APIPermissionRequiredMixin,
         'GET': 'resource.view',
         'PATCH': patch_actions
     }
+
+
+class ProjectSpatialResources(APIPermissionRequiredMixin,
+                              ProjectSpatialResourceMixin,
+                              generics.ListAPIView):
+
+    filter_backends = (filters.DjangoFilterBackend,
+                       filters.SearchFilter,
+                       filters.OrderingFilter,)
+    filter_fields = ('id', 'name')
+    search_fields = ('id', 'name',)
+    ordering_fields = ('name')
+    permission_required = {
+        'GET': 'resource.list'
+    }
+    permission_filter_queryset = ('resource.list',)
