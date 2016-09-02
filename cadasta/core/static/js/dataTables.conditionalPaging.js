@@ -31,8 +31,37 @@
         if ( e.namespace !== 'dt' ) {
             return;
         }
-        console.log(e, dtSettings)
-        // console.log(dtSettings.oTableWrapper)
+        // function filterGlobal () {
+        //     $('#example').DataTable().search(
+        //         $('#table-select').val()
+        //     ).draw();
+        // }
+        function addSelectOptions(){
+            aData = ['Active', 'Archived', 'All']
+            var r='<label><div class"input-group"><select class="form-control select-sm" id="table-select">', i, iLen=aData.length;
+            for ( i=0 ; i<iLen ; i++ )
+            {
+                r += '<option value="'+aData[i]+'">'+aData[i]+'</option>';
+            }
+            return r+'</select></div></label>';
+        }
+        dtSettings.nTableWrapper.childNodes[0].childNodes[0].innerHTML += addSelectOptions()
+
+        $('select', this).change( function () {
+            value = $('#table-select').val()
+            if (value == 'All'){
+                $('#example').DataTable().search(
+                    ''
+                ).draw();
+            }
+            else if (value == 'Archived'){
+                $('#example').DataTable().search(
+                    // "<span class="label label-danger">Archived</span>"
+                    "Archived"
+                ).draw();
+            }
+        } );
+        // dtSettings.oTableWrapper.innerHTML = '<h1>BOO!</h1>'
 
         var options = dtSettings.oInit.conditionalPaging;
         if ($.isPlainObject(options) || options === true) {

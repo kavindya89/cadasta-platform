@@ -41,8 +41,8 @@ class OrganizationList(PermissionRequiredMixin, generic.ListView):
     permission_required = 'org.list'
     permission_filter_queryset = ('org.view',)
 
-    def get_queryset(self):
-        return Organization.objects.filter(archived=False)
+    # def get_queryset(self):
+    #     return Organization.objects.filter(archived=False)
 
 
 class OrganizationAdd(LoginPermissionRequiredMixin, generic.CreateView):
