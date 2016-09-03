@@ -5747,6 +5747,10 @@ textarea.form-control {
     min-width: 60px !important; }
   .table div.org-logo {
     padding: 4px 0; }
+  .table td.archived {
+    display: None !important; }
+  .table th.archived {
+    display: None !important; }
 
 table.table-location {
   border-top: none; }

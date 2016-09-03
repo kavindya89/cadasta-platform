@@ -1066,6 +1066,12 @@ textarea.form-control {
   div.org-logo {
     padding: 4px 0;
   }
+  td.archived {
+    display: None !important
+  }
+  th.archived {
+    display: None !important
+  }
 }
 
 table.table-location { // location details in map area

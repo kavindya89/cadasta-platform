@@ -41,8 +41,10 @@ class OrganizationList(PermissionRequiredMixin, generic.ListView):
     permission_required = 'org.list'
     permission_filter_queryset = ('org.view',)
 
-    # def get_queryset(self):
-    #     return Organization.objects.filter(archived=False)
+    def get_queryset(self):
+        if self.is_superuser:
+            return Organization.objects.all()
+        return Organization.objects.filter(archived=False)
 
 
 class OrganizationAdd(LoginPermissionRequiredMixin, generic.CreateView):
@@ -369,7 +371,7 @@ class ProjectDashboard(PermissionRequiredMixin,
                        mixins.ProjectMixin,
                        generic.DetailView):
     def update_permissions(self, view):
-        if self.prj.archived and not self.is_su:
+        if self.prj.archived and not self.is_superuser:
             if view.user.is_anonymous():
                 return False
             org_admin = OrganizationRole.objects.filter(
