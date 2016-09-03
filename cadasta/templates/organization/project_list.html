@@ -33,24 +33,34 @@
 <table class="table table-hover datatable" data-paging-type="simple">
   <thead>
     <tr>
+      {% if proj.archived %}
+        <th class="archived">
+      {% else %}
+        <th class="unarchived">
+      {% endif %}
+        <div>{% trans "Archived" %}</div></th>
       <th class="col-md-8">{% trans "Project" %}</th>
       <th class="col-md-1 hidden-xs">{% trans "Organization" %}</th>
-      <th class="archived">{% trans "Archived" %}</th>
       <th class="col-md-1 hidden-xs hidden-sm">{% trans "Country" %}</th>
       <th class="col-md-2 hidden-xs hidden-sm">{% trans "Last updated" %}</th>
     </tr>
   </thead>
   {% for proj in object_list %}
   <tr class="linked" onclick="window.document.location='{% url 'organization:project-dashboard' organization=proj.organization.slug project=proj.slug %}';">
+    {% if proj.archived %}
+      <td class="archived"><div>True</div></td>
+    {% else %}
+      <td class="unarchived"><div>False</div></td>
+    {% endif %}
     <td>
       <h4>{{ proj.name }}
       {% if proj.archived %}
-          <span class="label label-danger">Archived</span>
+          <span class="label label-danger">{% trans "Archived" %}</span>
         {% endif %}
         </h4>
       </h4>
       <p>{{ proj.description }}</p>
-      <p class="visible-xs-block">Organization: {{ proj.organization.name }}</p>
+      <p class="visible-xs-block">{% trans "Organization:" %} {{ proj.organization.name }}</p>
     </td>
     <td class="hidden-xs">
       {% if proj.organization.logo %}
@@ -62,7 +72,6 @@
         <p class="org-name-alt">{{ proj.organization.name }}</p>
       {% endif %}
     </td>
-    <td class="archived">{% if proj.archived %}True{% else %}False{% endif %}</td>
     <td class="hidden-xs hidden-sm">{{ proj.country.name }}</td>
     <td class="hidden-xs hidden-sm">{{ proj.last_updated|default_if_none:"&mdash;" }}</td>
   </tr>

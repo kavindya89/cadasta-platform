@@ -143,9 +143,11 @@ class ProjectListTest(UserTestCase):
                   ])
 
     def test_get_with_org_admin(self):
-        OrganizationRole.objects.create(
-            organization=self.ok_org2, user=self.user).admin = True
-        self._get(status=200, make_org_member=[self.ok_org1, self.ok_org2],
+        org_role = OrganizationRole.objects.create(
+            organization=self.ok_org2, user=self.user)
+        org_role.admin = True
+        org_role.save()
+        self._get(status=200, make_org_member=[self.ok_org1],
                   projs=self.projs + self.unauth_projs + [
                       self.priv_proj1, self.priv_proj2, self.priv_proj3,
                       self.archived_proj

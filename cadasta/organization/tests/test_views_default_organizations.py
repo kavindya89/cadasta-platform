@@ -25,7 +25,7 @@ class OrganizationListTest(UserTestCase):
         setattr(self.request, 'method', 'GET')
 
         self.orgs = OrganizationFactory.create_batch(2)
-        OrganizationFactory.create(slug='unauthorized')
+        # OrganizationFactory.create(slug='unauthorized')
 
         clauses = {
             'clause': [
@@ -80,11 +80,12 @@ class OrganizationListTest(UserTestCase):
         user = UserFactory.create()
         archived_org = OrganizationFactory.create(
             archived=True, add_users=[self.user])
-        OrganizationRole.objects.create(
-            organization=archived_org, user=user).admin = True
-        orgs = self.orgs.extend(archived_org)
+        org_role = OrganizationRole.objects.create(
+            organization=archived_org, user=user)
+        org_role.admin = True
+        org_role.save()
         # this should be adjusted based on filters
-        self._get(orgs, user=user, status=200)
+        self._get(Organization.objects.all(), user=user, status=200)
 
     def test_get_with_superuser(self):
         archived_org = OrganizationFactory.create(

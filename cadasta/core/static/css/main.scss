@@ -1066,10 +1066,10 @@ textarea.form-control {
   div.org-logo {
     padding: 4px 0;
   }
-  td.archived {
+  td.archived, td.unarchived {
     display: None !important
   }
-  th.archived {
+  th.archived, th.unarchived {
     display: None !important
   }
 }

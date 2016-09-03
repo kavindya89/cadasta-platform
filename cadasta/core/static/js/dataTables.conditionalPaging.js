@@ -31,38 +31,6 @@
         if ( e.namespace !== 'dt' ) {
             return;
         }
-        function addSelectOptions(){
-            aData = ['Active', 'Archived', 'All']
-            var r='<label><div class"input-group"><select class="form-control select-sm" id="archive-filter">', i, iLen=aData.length;
-            for ( i=0 ; i<iLen ; i++ )
-            {
-                r += '<option value="'+aData[i]+'">'+aData[i]+'</option>';
-            }
-            return r+'</select></div></label>';
-        }
-        dtSettings.nTableWrapper.childNodes[0].childNodes[0].innerHTML += addSelectOptions()
-
-        var table = $('#DataTables_Table_0').DataTable();
-        table.columns(2).search('False').draw();
-
-        $('input').on( 'keyup', function () {
-            table.search( this.value ).draw();
-        } );
-
-        $('#archive-filter').change(function () {
-            table.search('').draw();
-            value = $('#archive-filter').val()
-            if (value == 'All'){
-                search = ''
-            }
-            else if (value == 'Archived'){
-                search = 'True'
-            }
-            else {
-                search = 'False'
-            }
-            table.columns(2).search( search ).draw();
-        } );
 
         var options = dtSettings.oInit.conditionalPaging;
         if ($.isPlainObject(options) || options === true) {

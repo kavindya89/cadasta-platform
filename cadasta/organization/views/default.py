@@ -26,25 +26,30 @@ from .. import messages as error_messages
 
 
 class OrganizationList(PermissionRequiredMixin, generic.ListView):
-    def update_permissions(self, view, request):
-        if self.get_object().archived and not self.is_superuser:
-            if self.request.user.is_anonymous():
-                return False
-            org_admin = OrganizationRole.objects.filter(
-                organization=self.get_object(), user=self.request.user)
-            if len(org_admin) == 0 or not org_admin[0].admin:
-                return False
-        return 'org.view'
-
     model = Organization
     template_name = 'organization/organization_list.html'
     permission_required = 'org.list'
-    permission_filter_queryset = ('org.view',)
+    permission_filter_queryset = (lambda self, view, o: ('org.view',)
+                                  if o.archived == 'False'
+                                  else ('org.view_archived',))
 
-    def get_queryset(self):
-        if self.is_superuser:
-            return Organization.objects.all()
-        return Organization.objects.filter(archived=False)
+    def get(self, request, *args, **kwargs):
+        if (hasattr(self.request.user, 'assigned_policies') and
+           self.is_superuser):
+                organizations = Organization.objects.all()
+        else:
+            organizations = []
+            organizations.extend(Organization.objects.filter(archived=False))
+            if hasattr(self.request.user, 'organizations'):
+                user_orgs = self.request.user.organizations.all()
+                for org in Organization.objects.all():
+                    if org in user_orgs:
+                        if org.archived is True and OrganizationRole.objects.get(organization=org, user=self.request.user).admin is True:
+                            organizations.append(org)
+        self.object_list = sorted(
+            organizations, key=lambda o: o.slug)
+        context = self.get_context_data()
+        return super(generic.ListView, self).render_to_response(context)
 
 
 class OrganizationAdd(LoginPermissionRequiredMixin, generic.CreateView):
@@ -344,8 +349,10 @@ class ProjectList(PermissionRequiredMixin,
     template_name = 'organization/project_list.html'
     permission_required = 'project.list'
     permission_filter_queryset = (lambda self, view, p: ('project.view',)
-                                  if p.access == 'public'
-                                  else ('project.view_private',))
+                                  if (p.access == 'public' and p.archived is
+                                      False)
+                                  else ('project.view_private',
+                                        'project.view_archived'))
     project_create_check_multiple = True
 
     def get(self, request, *args, **kwargs):
@@ -354,12 +361,16 @@ class ProjectList(PermissionRequiredMixin,
                 projects = Project.objects.all()
         else:
             projects = []
-            projects.extend(Project.objects.filter(access='public'))
+            projects.extend(Project.objects.filter(access='public',
+                                                   archived=False))
             if hasattr(self.request.user, 'organizations'):
                 user_orgs = self.request.user.organizations.all()
                 for org in Organization.objects.all():
                     if org in user_orgs:
                         projects.extend(org.projects.filter(access='private'))
+                        if OrganizationRole.objects.get(organization=org, user=self.request.user).admin is True:
+                            projects.extend(org.projects.filter(archived=True,
+                                                                access='public'))
         self.object_list = sorted(
             projects, key=lambda p: p.organization.slug + ':' + p.slug)
         context = self.get_context_data()
