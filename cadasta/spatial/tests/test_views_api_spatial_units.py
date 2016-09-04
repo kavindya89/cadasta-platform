@@ -142,6 +142,16 @@ class SpatialUnitCreateAPITest(SpatialUnitListTestCase,
             "Invalid format: string or unicode input"
             " unrecognized as GeoJSON, WKT EWKT or HEXEWKB.")
 
+    def test_create_archived_project(self):
+        org, prj = self._test_objs()
+        prj.archived = True
+        prj.save()
+        prj.refresh_from_db()
+        content = self._post(
+            org_slug=org.slug, prj_slug=prj.slug,
+            data=invalid_data, status=status_code.HTTP_400_BAD_REQUEST)
+        assert content['type'][0] == _('"" is not a valid choice.')
+
 
 class SpatialUnitDetailTestCase(RecordDetailBaseTestCase):
 

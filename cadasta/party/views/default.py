@@ -24,9 +24,13 @@ class PartiesList(LoginPermissionRequiredMixin,
 class PartiesAdd(LoginPermissionRequiredMixin,
                  mixins.PartyQuerySetMixin,
                  generic.CreateView):
+    def update_permissions(self, view, request):
+        if self.get_project().archived:
+                return False
+        return 'party.create'
     form_class = forms.PartyForm
     template_name = 'party/party_add.html'
-    permission_required = 'party.create'
+    permission_required = update_permissions
     permission_denied_message = error_messages.PARTY_CREATE
 
     def get_perms_objects(self):
@@ -55,9 +59,13 @@ class PartiesEdit(LoginPermissionRequiredMixin,
                   mixins.PartyObjectMixin,
                   organization_mixins.ProjectAdminCheckMixin,
                   generic.UpdateView):
+    def update_permissions(self, view, request):
+        if self.get_project().archived:
+                return False
+        return 'party.update'
     template_name = 'party/party_edit.html'
     form_class = forms.PartyForm
-    permission_required = 'party.update'
+    permission_required = update_permissions
     permission_denied_message = error_messages.PARTY_UPDATE
 
 
@@ -65,8 +73,12 @@ class PartiesDelete(LoginPermissionRequiredMixin,
                     mixins.PartyObjectMixin,
                     organization_mixins.ProjectAdminCheckMixin,
                     generic.DeleteView):
+    def update_permissions(self, view, request):
+        if self.get_project().archived:
+                return False
+        return 'party.delete'
     template_name = 'party/party_delete.html'
-    permission_required = 'party.delete'
+    permission_required = update_permissions
     permission_denied_message = error_messages.PARTY_DELETE
 
     def get_success_url(self):
@@ -80,9 +92,13 @@ class PartyResourcesAdd(LoginPermissionRequiredMixin,
                         organization_mixins.ProjectAdminCheckMixin,
                         base_generic.edit.FormMixin,
                         generic.DetailView):
+    def update_permissions(self, view, request):
+        if self.get_project().archived:
+                return False
+        return 'party.resources.add'
     template_name = 'party/resources_add.html'
     form_class = AddResourceFromLibraryForm
-    permission_required = 'party.resources.add'
+    permission_required = update_permissions
     permission_denied_message = error_messages.PARTY_RESOURCES_ADD
 
     def post(self, request, *args, **kwargs):
@@ -98,8 +114,12 @@ class PartyResourcesNew(LoginPermissionRequiredMixin,
                         organization_mixins.ProjectAdminCheckMixin,
                         resource_mixins.HasUnattachedResourcesMixin,
                         generic.CreateView):
+    def update_permissions(self, view, request):
+        if self.get_project().archived:
+                return False
+        return 'party.resources.add'
     template_name = 'party/resources_new.html'
-    permission_required = 'party.resources.add'
+    permission_required = update_permissions
     permission_denied_message = error_messages.PARTY_RESOURCES_ADD
 
 
@@ -120,9 +140,13 @@ class PartyRelationshipEdit(LoginPermissionRequiredMixin,
                             mixins.PartyRelationshipObjectMixin,
                             organization_mixins.ProjectAdminCheckMixin,
                             generic.UpdateView):
+    def update_permissions(self, view, request):
+        if self.get_project().archived:
+                return False
+        return 'tenure_rel.update'
     template_name = 'party/relationship_edit.html'
     form_class = forms.TenureRelationshipEditForm
-    permission_required = 'tenure_rel.update'
+    permission_required = update_permissions
     permission_denied_message = error_messages.TENURE_REL_UPDATE
 
     def get_success_url(self):
@@ -133,8 +157,12 @@ class PartyRelationshipDelete(LoginPermissionRequiredMixin,
                               mixins.PartyRelationshipObjectMixin,
                               organization_mixins.ProjectAdminCheckMixin,
                               generic.DeleteView):
+    def update_permissions(self, view, request):
+        if self.get_project().archived:
+                return False
+        return 'tenure_rel.delete'
     template_name = 'party/relationship_delete.html'
-    permission_required = 'tenure_rel.delete'
+    permission_required = update_permissions
     permission_denied_message = error_messages.TENURE_REL_DELETE
 
     def get_success_url(self):
@@ -148,8 +176,12 @@ class PartyRelationshipResourceNew(LoginPermissionRequiredMixin,
                                    organization_mixins.ProjectAdminCheckMixin,
                                    resource_mixins.HasUnattachedResourcesMixin,
                                    generic.CreateView):
+    def update_permissions(self, view, request):
+        if self.get_project().archived:
+                return False
+        return 'tenure_rel.resources.add'
     template_name = 'party/relationship_resources_new.html'
-    permission_required = 'tenure_rel.resources.add'
+    permission_required = update_permissions
     permission_denied_message = error_messages.TENURE_REL_RESOURCES_ADD
 
 
@@ -158,9 +190,13 @@ class PartyRelationshipResourceAdd(LoginPermissionRequiredMixin,
                                    organization_mixins.ProjectAdminCheckMixin,
                                    base_generic.edit.FormMixin,
                                    generic.DetailView):
+    def update_permissions(self, view, request):
+        if self.get_project().archived:
+                return False
+        return 'tenure_rel.resources.add'
     template_name = 'party/relationship_resources_add.html'
     form_class = AddResourceFromLibraryForm
-    permission_required = 'tenure_rel.resources.add'
+    permission_required = update_permissions
     permission_denied_message = error_messages.TENURE_REL_RESOURCES_ADD
 
     def post(self, request, *args, **kwargs):

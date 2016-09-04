@@ -286,6 +286,12 @@ class OrganizationDashboardTest(UserTestCase):
         self.org.refresh_from_db()
         response = self._get(self.org.slug, user=AnonymousUser(), status=302)
 
+    def test_get_archived_org_with_unauthorized_user(self):
+        self.org.archived = True
+        self.org.save()
+        self.org.refresh_from_db()
+        response = self._get(self.org.slug, status=302)
+
     def test_get_archived_org_with_org_admin(self):
         self.org.archived = True
         self.org.save()

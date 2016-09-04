@@ -703,7 +703,7 @@ class ProjectResourcesEditTest(UserTestCase):
         self.project.save()
         self.project.refresh_from_db()
         self._get(status=302)
-        assert ("You don't have permission to edit this resource"
+        assert ("You don't have permission to edit this resource."
                 in [str(m) for m in get_messages(self.request)])
 
     def test_update(self):

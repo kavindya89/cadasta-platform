@@ -353,6 +353,12 @@ class ProjectDashboardTest(UserTestCase):
         response = self._get(self.project1, status=302)
         self._check_fail()
 
+    def test_get_archived_project_with_unauthentic_user(self):
+        self.project1.archived = True
+        self.project1.save()
+        response = self._get(self.project1, user=AnonymousUser(), status=302)
+        self._check_fail()
+
     def test_get_archived_project_with_org_admin(self):
         org_admin = UserFactory.create()
         OrganizationRole.objects.create(
@@ -451,6 +457,14 @@ class ProjectAddTest(UserTestCase):
         form_initial = view.get_form_initial('details')
 
         assert form_initial.get('organization') == self.org.slug
+
+    def test_get_from_initial_with_archived_org(self):
+        """ If users create a project from an archived organization, if fails.
+        """
+        self.org.archived = True
+        self.org.save()
+        self.org.refresh_from_db()
+        assert False
 
     def test_get_from_initial_with_no_org(self):
         """ If a project is created from scratch, no the initial value for

@@ -41,9 +41,13 @@ class ProjectResourcesAdd(LoginPermissionRequiredMixin,
                           base_generic.edit.FormMixin,
                           organization_mixins.ProjectAdminCheckMixin,
                           generic.DetailView):
+    def update_permissions(self, view, request):
+        if self.get_project().archived:
+                return False
+        return 'resource.add'
     template_name = 'resources/project_add_existing.html'
     form_class = AddResourceFromLibraryForm
-    permission_required = 'resource.add'
+    permission_required = update_permissions
     permission_denied_message = error_messages.RESOURCE_ADD
 
     def get_object(self):
@@ -62,8 +66,12 @@ class ProjectResourcesNew(LoginPermissionRequiredMixin,
                           mixins.HasUnattachedResourcesMixin,
                           organization_mixins.ProjectAdminCheckMixin,
                           generic.CreateView):
+    def update_permissions(self, view, request):
+        if self.get_project().archived:
+                return False
+        return 'resource.add'
     template_name = 'resources/project_add_new.html'
-    permission_required = 'resource.add'
+    permission_required = update_permissions
     permission_denied_message = error_messages.RESOURCE_ADD
 
     def get_perms_objects(self):
@@ -99,8 +107,12 @@ class ProjectResourcesEdit(LoginPermissionRequiredMixin,
                            mixins.ResourceObjectMixin,
                            organization_mixins.ProjectAdminCheckMixin,
                            generic.UpdateView):
+    def update_permissions(self, view, request):
+        if self.get_project().archived:
+                return False
+        return 'resource.edit'
     template_name = 'resources/edit.html'
-    permission_required = 'resource.edit'
+    permission_required = update_permissions
     permission_denied_message = error_messages.RESOURCE_EDIT
 
     def get_context_data(self, *args, **kwargs):

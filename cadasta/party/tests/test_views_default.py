@@ -985,7 +985,7 @@ class PartyRelationshipDeleteTest(TestCase):
         self.project.archived = True
         self.project.save()
         self.project.refresh_from_db()
-        esponse = self.request(method='POST', user=self.unauthorized_user)
+        response = self.request(method='POST', user=self.unauthorized_user)
         assert response.status_code == 302
         assert ("You don't have permission to remove this tenure relationship."
                 in [str(m) for m in get_messages(self.request)])

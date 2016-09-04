@@ -29,9 +29,14 @@ class LocationsAdd(LoginPermissionRequiredMixin,
                    mixins.SpatialQuerySetMixin,
                    organization_mixins.ProjectAdminCheckMixin,
                    generic.CreateView):
+    def update_permissions(self, view, request):
+        if self.get_project().archived:
+                return False
+        return 'spatial.add'
+
     form_class = forms.LocationForm
     template_name = 'spatial/location_add.html'
-    permission_required = 'spatial.add'
+    permission_required = update_permissions
     permission_denied_message = error_messages.SPATIAL_CREATE
 
     def get_perms_objects(self):
@@ -80,9 +85,13 @@ class LocationEdit(LoginPermissionRequiredMixin,
                    mixins.SpatialUnitObjectMixin,
                    organization_mixins.ProjectAdminCheckMixin,
                    generic.UpdateView):
+    def update_permissions(self, view, request):
+        if self.get_project().archived:
+                return False
+        return 'spatial.edit'
     template_name = 'spatial/location_edit.html'
     form_class = forms.LocationForm
-    permission_required = 'spatial.edit'
+    permission_required = update_permissions
     permission_denied_message = error_messages.SPATIAL_UPDATE
 
 
@@ -90,8 +99,12 @@ class LocationDelete(LoginPermissionRequiredMixin,
                      mixins.SpatialUnitObjectMixin,
                      organization_mixins.ProjectAdminCheckMixin,
                      generic.DeleteView):
+    def update_permissions(self, view, request):
+        if self.get_project().archived:
+                return False
+        return 'spatial.delete'
     template_name = 'spatial/location_delete.html'
-    permission_required = 'spatial.delete'
+    permission_required = update_permissions
     permission_denied_message = error_messages.SPATIAL_DELETE
 
     def get_success_url(self):
@@ -105,9 +118,13 @@ class LocationResourceAdd(LoginPermissionRequiredMixin,
                           base_generic.edit.FormMixin,
                           organization_mixins.ProjectAdminCheckMixin,
                           generic.DetailView):
+    def update_permissions(self, view, request):
+        if self.get_project().archived:
+                return False
+        return 'spatial.resources.add'
     template_name = 'spatial/resources_add.html'
     form_class = AddResourceFromLibraryForm
-    permission_required = 'spatial.resources.add'
+    permission_required = update_permissions
     permission_denied_message = error_messages.SPATIAL_ADD_RESOURCE
 
     def post(self, request, *args, **kwargs):
@@ -123,8 +140,12 @@ class LocationResourceNew(LoginPermissionRequiredMixin,
                           organization_mixins.ProjectAdminCheckMixin,
                           resource_mixins.HasUnattachedResourcesMixin,
                           generic.CreateView):
+    def update_permissions(self, view, request):
+        if self.get_project().archived:
+                return False
+        return 'spatial.resource.add'
     template_name = 'spatial/resources_new.html'
-    permission_required = 'spatial.resources.add'
+    permission_required = update_permissions
     permission_denied_message = error_messages.SPATIAL_ADD_RESOURCE
 
     def get_context_data(self, *args, **kwargs):
@@ -142,9 +163,13 @@ class TenureRelationshipAdd(LoginPermissionRequiredMixin,
                             mixins.SpatialUnitRelationshipMixin,
                             organization_mixins.ProjectAdminCheckMixin,
                             generic.CreateView):
+    def update_permissions(self, view, request):
+        if self.get_project().archived:
+                return False
+        return 'tenure_rel.create'
     template_name = 'spatial/relationship_add.html'
     form_class = forms.TenureRelationshipForm
-    permission_required = 'tenure_rel.create'
+    permission_required = update_permissions
     permission_denied_message = TENURE_REL_CREATE
 
     def get_perms_objects(self):
