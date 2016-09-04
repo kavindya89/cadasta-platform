@@ -355,7 +355,10 @@ class OrganizationProjectListAPITest(UserTestCase):
         organization = OrganizationFactory.create(slug='habitat')
         ProjectFactory.create(organization=organization, archived=True)
         ProjectFactory.create(organization=organization, archived=False)
-        self._get('habitat', query='archived=True', status=200, length=1)
+        OrganizationRole.objects.create(organization=organization,
+                                        user=self.user,
+                                        admin=True)
+        self._get('habitat', query='archived=False', status=200, length=1)
 
     def test_search_filter(self):
         """
@@ -401,7 +404,12 @@ class ProjectListAPITest(UserTestCase):
                     'effect': 'allow',
                     'object': ['organization/*'],
                     'action': ['project.list']
-                }
+                },
+                {
+                  "effect": "allow",
+                  "action": ["project.view"],
+                  "object": ["project/*/*"]
+                },
             ]
         }
         policy = Policy.objects.create(
@@ -454,7 +462,6 @@ class ProjectListAPITest(UserTestCase):
         """
         It should 403 "You do not have permission to perform this action."
         """
-        OrganizationFactory.create(slug='habitat')
         content = self._get(user=AnonymousUser(), status=403)
         assert content['detail'] == PermissionDenied.default_detail
 
@@ -462,8 +469,12 @@ class ProjectListAPITest(UserTestCase):
         """
         It should return only one active project.
         """
-        ProjectFactory.create(archived=True)
-        ProjectFactory.create(archived=False)
+        org = OrganizationFactory.create()
+        OrganizationRole.objects.create(organization=org,
+                                        user=self.user,
+                                        admin=True)
+        ProjectFactory.create(archived=True, organization=org)
+        ProjectFactory.create(archived=False, organization=org)
         self._get(query='archived=True', status=200, length=1)
 
     def test_search_filter(self):

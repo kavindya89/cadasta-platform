@@ -87,9 +87,11 @@ class OrganizationListAPITest(UserTestCase):
         """
         It should return only one archived organization.
         """
-        OrganizationFactory.create_from_kwargs(
-            [{'archived': True}, {'archived': False}]
-        )
+        org = OrganizationFactory.create(archived=True)
+        OrganizationFactory.create(archived=False)
+        OrganizationRole.objects.create(organization=org,
+                                        user=self.user,
+                                        admin=True)
         content = self._get(query='archived=True', status=200, length=1)
         assert content[0]['archived'] is True
 

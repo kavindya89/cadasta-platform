@@ -31,7 +31,6 @@
         if ( e.namespace !== 'dt' ) {
             return;
         }
-
         var options = dtSettings.oInit.conditionalPaging;
         if ($.isPlainObject(options) || options === true) {
             var config = $.isPlainObject(options) ? options : {},

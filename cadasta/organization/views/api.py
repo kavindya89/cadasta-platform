@@ -23,22 +23,17 @@ class OrganizationList(APIPermissionRequiredMixin, generics.ListCreateAPIView):
         'GET': 'org.list',
         'POST': 'org.create',
     }
-    permission_filter_queryset = ('org.view',)
+    permission_filter_queryset = (lambda self, view, o: ('org.view',)
+                                  if o.archived is False
+                                  else ('org.view_archived',))
 
 
 class OrganizationDetail(APIPermissionRequiredMixin,
+                         mixins.OrganizationMixin,
                          generics.RetrieveUpdateAPIView):
     def view_actions(self, request):
-        is_archived = self.get_object().archived
-        if is_archived:
-            user = self.request.user
-            if user.is_anonymous():
-                return False
-            org_role = OrganizationRole.objects.filter(
-                organization=self.get_object(), user=user)
-            print(org_role)
-            if len(org_role) == 0 or not org_role[0].admin:
-                return False
+        if self.get_object().archived:
+            return 'org.view_archived'
         return 'org.view'
 
     def patch_actions(self, request):
@@ -62,31 +57,33 @@ class OrganizationDetail(APIPermissionRequiredMixin,
     }
 
 
+def update_permissions(permission):
+        def set_permissions(self, request, view=None):
+            if hasattr(self, "get_organization"):
+                if self.get_organization().archived:
+                    return False
+            elif hasattr(self, "get_project"):
+                if self.get_project().archived:
+                    return False
+            return permission
+        return set_permissions
+
+
 class OrganizationUsers(APIPermissionRequiredMixin,
                         mixins.OrganizationRoles,
                         generics.ListCreateAPIView):
-    def update_permissions(self, request):
-        if self.org.archived:
-            return False
-        return 'org.users.add'
-
     serializer_class = serializers.OrganizationUserSerializer
     permission_required = {
         'GET': 'org.users.list',
-        'POST': update_permissions,
+        'POST': update_permissions('org.users.add'),
     }
 
 
 class OrganizationUsersDetail(APIPermissionRequiredMixin,
                               mixins.OrganizationRoles,
                               generics.RetrieveUpdateDestroyAPIView):
-    def update_permissions(self, view, request):
-        if self.org.archived:
-            return False
-        return 'org.users.remove'
-
     serializer_class = serializers.OrganizationUserSerializer
-    permission_required = update_permissions
+    permission_required = update_permissions('org.users.remove')
 
     def destroy(self, request, *args, **kwargs):
         user = self.get_object()
@@ -126,11 +123,6 @@ class OrganizationProjectList(APIPermissionRequiredMixin,
                               mixins.OrganizationMixin,
                               mixins.ProjectQuerySetMixin,
                               generics.ListCreateAPIView):
-    def update_permissions(self, request):
-        if self.get_organization().archived:
-            return False
-        return 'project.create'
-
     serializer_class = serializers.ProjectSerializer
     filter_backends = (filters.DjangoFilterBackend,
                        filters.SearchFilter,
@@ -140,8 +132,11 @@ class OrganizationProjectList(APIPermissionRequiredMixin,
     ordering_fields = ('name', 'organization', 'country', 'description',)
     permission_required = {
         'GET': 'project.list',
-        'POST': update_permissions
+        'POST': update_permissions('project.create')
     }
+    permission_filter_queryset = (lambda self, view, p: ('project.view',)
+                                  if p.archived is False
+                                  else ('project.view_archived',))
 
     def get_serializer_context(self, *args, **kwargs):
         org = self.get_organization()
@@ -166,23 +161,19 @@ class ProjectList(APIPermissionRequiredMixin, mixins.ProjectQuerySetMixin,
     filter_fields = ('archived',)
     search_fields = ('name', 'organization__name', 'country', 'description',)
     ordering_fields = ('name', 'organization', 'country', 'description',)
-    permission_required = {'project.list'}
+    permission_required = {'GET': 'project.list'}
+    permission_filter_queryset = (lambda self, view, p: ('project.view',)
+                                  if p.archived is False
+                                  else ('project.view_archived',))
 
 
 class ProjectDetail(APIPermissionRequiredMixin,
                     mixins.OrganizationMixin,
+                    mixins.OrgAdminCheckMixin,
                     generics.RetrieveUpdateDestroyAPIView):
     def get_actions(self, request):
-        is_archived = self.get_object().archived
-        if is_archived:
-            user = self.request.user
-            if user.is_anonymous():
-                return False
-            org_role = OrganizationRole.objects.filter(
-                organization=self.get_object().organization, user=user)
-            print(org_role)
-            if len(org_role) == 0 or not org_role[0].admin:
-                return False
+        if self.get_object().archived:
+            return 'project.view_archived'
         if self.get_object().public():
             return 'project.view'
         else:
@@ -222,34 +213,23 @@ class ProjectDetail(APIPermissionRequiredMixin,
 class ProjectUsers(APIPermissionRequiredMixin,
                    mixins.ProjectRoles,
                    generics.ListCreateAPIView):
-    def update_permissions(self, request):
-        if self.get_project().archived:
-            return False
-        return 'project.users.add'
 
     serializer_class = serializers.ProjectUserSerializer
     permission_required = {
         'GET': 'project.users.list',
-        'POST': update_permissions
+        'POST': update_permissions('project.users.add')
     }
 
 
 class ProjectUsersDetail(APIPermissionRequiredMixin,
                          mixins.ProjectRoles,
                          generics.RetrieveUpdateDestroyAPIView):
-    def update_permissions(self, request):
-        if self.get_project().archived:
-            return False
-        if request.method == 'PATCH':
-            return 'project.users.edit'
-        else:
-            return 'project.users.delete'
     serializer_class = serializers.ProjectUserSerializer
 
     permission_required = {
         'GET': 'project.users.list',
-        'PATCH': update_permissions,
-        'DELETE': update_permissions,
+        'PATCH': update_permissions('project.users.update'),
+        'DELETE': update_permissions('project.users.delete'),
     }
 
     def destroy(self, request, *args, **kwargs):
