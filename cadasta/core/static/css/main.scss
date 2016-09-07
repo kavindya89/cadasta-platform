@@ -1067,10 +1067,10 @@ textarea.form-control {
     padding: 4px 0;
   }
   td.archived, td.unarchived {
-    display: None !important
+    display: none !important
   }
   th.archived, th.unarchived {
-    display: None !important
+    display: none !important
   }
 }
 
@@ -1356,20 +1356,28 @@ div.add-btn-btm { // add party link at bottom of table
 }
 
 .label {
-  font-size: 11px;
-  font-weight: 500;
+  display: inline-block;
+  margin-left: 6px;
+  margin-right: 6px;
+  font-size: 11px; 
+  font-weight: 500; 
   vertical-align: middle;
 }
 
-h1.label {
-  font-size: 14px;
+h1 .label {
+  font-size: 16px;
 }
-
 
 @media (max-width: $screen-sm-max) {
   .alert {
     max-width: none;
   }
+}
+
+@media (max-width: $screen-xs-max) {
+  h1 .label {
+    font-size: 12px;
+  } 
 }
 
 /* =Modals

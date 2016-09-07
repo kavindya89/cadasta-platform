@@ -5748,9 +5748,9 @@ textarea.form-control {
   .table div.org-logo {
     padding: 4px 0; }
   .table td.archived, .table td.unarchived {
-    display: None !important; }
+    display: none !important; }
   .table th.archived, .table th.unarchived {
-    display: None !important; }
+    display: none !important; }
 
 table.table-location {
   border-top: none; }
@@ -5976,16 +5976,23 @@ div.add-btn-btm {
     color: #843534; }
 
 .label {
+  display: inline-block;
+  margin-left: 6px;
+  margin-right: 6px;
   font-size: 11px;
   font-weight: 500;
   vertical-align: middle; }
 
-h1.label {
-  font-size: 14px; }
+h1 .label {
+  font-size: 16px; }
 
 @media (max-width: 991px) {
   .alert {
     max-width: none; } }
+
+@media (max-width: 767px) {
+  h1 .label {
+    font-size: 12px; } }
 
 /* =Modals
 -------------------------------------------------------------- */
