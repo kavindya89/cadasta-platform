@@ -635,7 +635,7 @@ class LocationResourceAddTest(TestCase):
                 "add resources to this location."
                 in [str(m) for m in get_messages(self.request)])
         assert self.location.resources.count() == 1
-        assert self.location.resources.first() == self.assigned
+        assert self.location.resources.first() == self.attached
 
 
 @pytest.mark.usefixtures('make_dirs')

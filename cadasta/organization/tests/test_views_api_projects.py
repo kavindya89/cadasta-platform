@@ -8,7 +8,6 @@ from rest_framework.exceptions import PermissionDenied
 from tutelary.models import Policy, assign_user_policies
 
 from core.tests.base_test_case import UserTestCase
-from accounts.models import User
 from accounts.tests.factories import UserFactory
 from accounts.models import User
 from .factories import OrganizationFactory, ProjectFactory, clause
@@ -126,10 +125,10 @@ class ProjectUsersAPITest(UserTestCase):
 
     def test_add_user_to_archived_project(self):
         user_to_add = UserFactory.create()
-        project = ProjectFactory.create(archived=True)
-        content = self._post(project.organization.slug, project,
-                             {'username': user_to_add.username}, status=403,
-                             count=0)
+        org = OrganizationFactory.create(add_users=[user_to_add])
+        project = ProjectFactory.create(organization=org, archived=True)
+        self._post(project.organization.slug, project,
+                   {'username': user_to_add.username}, status=403, count=0)
 
 
 class ProjectUsersDetailAPITest(UserTestCase):
@@ -297,7 +296,12 @@ class OrganizationProjectListAPITest(UserTestCase):
                     'effect': 'allow',
                     'object': ['organization/*'],
                     'action': ['project.list']
-                }
+                },
+                {
+                  "effect": "allow",
+                  "action": ["project.view"],
+                  "object": ["project/*/*"]
+                },
             ]
         }
         policy = Policy.objects.create(
@@ -539,7 +543,9 @@ class ProjectListAPITest(UserTestCase):
     def _check_visible(self, users, orgs, prjs, user, idxs):
         content = self._get(user=user, status=200)
         expected_names = [prjs[i].name for i in idxs]
+        print('expected:', expected_names)
         pnames = [p['name'] for p in content]
+        print('content:', pnames)
         assert(sorted(expected_names) == sorted(pnames))
 
     def test_visibility_filtering(self):

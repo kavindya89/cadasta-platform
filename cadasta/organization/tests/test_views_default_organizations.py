@@ -67,12 +67,12 @@ class OrganizationListTest(UserTestCase):
         assert expected == content
 
     def test_get_with_user(self):
-        archived_org = OrganizationFactory.create(
+        OrganizationFactory.create(
             archived=True, add_users=[self.user])
         self._get(self.orgs, status=200)
 
     def test_get_without_user(self):
-        archived_org = OrganizationFactory.create(
+        OrganizationFactory.create(
             archived=True, add_users=[self.user])
         self._get(self.orgs, user=AnonymousUser(), status=200)
 
@@ -88,7 +88,7 @@ class OrganizationListTest(UserTestCase):
         self._get(Organization.objects.all(), user=user, status=200)
 
     def test_get_with_superuser(self):
-        archived_org = OrganizationFactory.create(
+        OrganizationFactory.create(
             archived=True, add_users=[self.user])
         superuser = UserFactory.create()
         self.superuser_role = Role.objects.get(name='superuser')
@@ -284,13 +284,13 @@ class OrganizationDashboardTest(UserTestCase):
         self.org.archived = True
         self.org.save()
         self.org.refresh_from_db()
-        response = self._get(self.org.slug, user=AnonymousUser(), status=302)
+        self._get(self.org.slug, user=AnonymousUser(), status=302)
 
-    def test_get_archived_org_with_unauthorized_user(self):
+    def test_get_archived_org_with_org_member(self):
         self.org.archived = True
         self.org.save()
         self.org.refresh_from_db()
-        response = self._get(self.org.slug, status=302)
+        self._get(self.org.slug, status=302)
 
     def test_get_archived_org_with_org_admin(self):
         self.org.archived = True
@@ -932,7 +932,7 @@ class OrganizationMembersEditTest(UserTestCase):
         assert len(errors) == 1
         assert 'X is not one of the available choices' in errors[0]
 
-    def test_get_with_archived_organization(self):
+    def test_post_with_archived_organization(self):
         org = OrganizationFactory.create(archived=True)
         user = UserFactory.create()
         assign_user_policies(user, self.policy)

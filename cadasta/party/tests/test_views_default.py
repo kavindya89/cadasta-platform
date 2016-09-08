@@ -1111,7 +1111,7 @@ class PartyRelationshipResourceAddTest(TestCase):
                 in [str(m) for m in get_messages(self.request)])
 
         assert self.relationship.resources.count() == 1
-        assert self.relationship.resources.first() == self.assigned
+        assert self.relationship.resources.first() == self.attached
 
 
 @pytest.mark.usefixtures('make_dirs')

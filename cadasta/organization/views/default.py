@@ -6,7 +6,6 @@ from django.shortcuts import redirect, get_object_or_404
 import django.views.generic as base_generic
 from django.core.urlresolvers import reverse
 from django.contrib import messages
-from django.contrib.auth.models import AnonymousUser
 
 import formtools.wizard.views as wizard
 
@@ -78,14 +77,14 @@ class OrganizationDashboard(PermissionRequiredMixin,
                             mixins.OrgAdminCheckMixin,
                             mixins.ProjectCreateCheckMixin,
                             generic.DetailView):
-    def update_permissions(self, view, request):
+    def get_actions(self, view, request):
         if self.get_object().archived:
             return 'org.view_archived'
         return 'org.view'
 
     model = Organization
     template_name = 'organization/organization_dashboard.html'
-    permission_required = update_permissions
+    permission_required = get_actions
     permission_denied_message = error_messages.ORG_VIEW
 
     def get(self, request, *args, **kwargs):
@@ -108,6 +107,7 @@ def update_permissions(permission, obj=None):
     def set_permissions(self, view, request):
         if (hasattr(self, 'get_organization') and
                 self.get_organization().archived):
+                    print('return False')
                     return False
         if obj and self.get_object().archived:
             return False
@@ -218,7 +218,7 @@ class OrganizationMembersEdit(mixins.OrganizationMixin,
     template_name = 'organization/organization_members_edit.html'
     form_class = forms.EditOrganizationMemberForm
 
-    permission_required = update_permissions('org.users.edit', True)
+    permission_required = update_permissions('org.users.edit')
     permission_denied_message = error_messages.ORG_USERS_EDIT
 
     def get_success_url(self):
@@ -332,14 +332,18 @@ class ProjectList(PermissionRequiredMixin,
                   mixins.ProjectQuerySetMixin,
                   mixins.ProjectCreateCheckMixin,
                   generic.ListView):
+    def permission_filter(self, view, p):
+        if p.access == 'public' and p.archived is False:
+            return ('project.view',)
+        elif p.archived is True:
+            return ('project.view_archived',)
+        else:
+            return ('project.view_private',)
+
     model = Project
     template_name = 'organization/project_list.html'
     permission_required = 'project.list'
-    permission_filter_queryset = (lambda self, view, p: ('project.view',)
-                                  if (p.access == 'public' and p.archived is
-                                      False)
-                                  else ('project.view_private',
-                                        'project.view_archived'))
+    permission_filter_queryset = permission_filter
     project_create_check_multiple = True
 
     def get(self, request, *args, **kwargs):
@@ -371,7 +375,7 @@ class ProjectDashboard(PermissionRequiredMixin,
                        mixins.ProjectAdminCheckMixin,
                        mixins.ProjectMixin,
                        generic.DetailView):
-    def update_permissions(self, view):
+    def get_actions(self, view):
         if self.prj.archived:
             return "project.view_archived"
         if self.prj.public():
@@ -381,7 +385,7 @@ class ProjectDashboard(PermissionRequiredMixin,
 
     model = Project
     template_name = 'organization/project_dashboard.html'
-    permission_required = {'GET': update_permissions}
+    permission_required = {'GET': get_actions}
     permission_denied_message = error_messages.PROJ_VIEW
 
     def get_context_data(self, **kwargs):
@@ -426,8 +430,7 @@ def add_wizard_permission_required(self, view, request):
     session = request.session.get('wizard_project_add_wizard', None)
     if session is None or 'details' not in session['step_data']:
         return ()
-    elif 'details' in session['step_data']:
-        if Organization.objects.get(
+    elif 'details' in session['step_data'] and Organization.objects.get(
                 slug=session['step_data']['details']['details-organization'][0]
                 ).archived:
             return False

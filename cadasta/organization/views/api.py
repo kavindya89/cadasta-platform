@@ -27,6 +27,26 @@ class OrganizationList(APIPermissionRequiredMixin, generics.ListCreateAPIView):
                                   if o.archived is False
                                   else ('org.view_archived',))
 
+    # def get_queryset(self):
+    #     user = self.request.user
+    #     if hasattr(user, 'assigned_policies'):
+    #             role = Role.objects.filter(name='superuser')
+    #             if len(role) > 0:
+    #                 if role[0] in self.request.user.assigned_policies():
+    #                     return Organization.objects.all()
+    #     organizations = Organization.objects.all()
+    #     if hasattr(user, 'organizations'):
+    #         for org in Organization.objects.all():
+    #             if org not in user.organizations.all():
+    #                 organizations = organizations.exclude(access='private',
+    #                                                       name=org.name)
+    #             elif OrganizationRole.objects.get(organization=org,
+    #                                               user=user
+    #                                               ).admin is False:
+    #                     organizations = organizations.exclude(archived=True,
+    #                                                           name=org.name)
+    #     return organizations
+
 
 class OrganizationDetail(APIPermissionRequiredMixin,
                          mixins.OrganizationMixin,
@@ -62,8 +82,9 @@ def update_permissions(permission):
             if hasattr(self, "get_organization"):
                 if self.get_organization().archived:
                     return False
-            elif hasattr(self, "get_project"):
+            if hasattr(self, "get_project"):
                 if self.get_project().archived:
+                    print('return False')
                     return False
             return permission
         return set_permissions
@@ -121,6 +142,7 @@ class UserAdminDetail(APIPermissionRequiredMixin,
 
 class OrganizationProjectList(APIPermissionRequiredMixin,
                               mixins.OrganizationMixin,
+                              mixins.OrgAdminCheckMixin,
                               mixins.ProjectQuerySetMixin,
                               generics.ListCreateAPIView):
     serializer_class = serializers.ProjectSerializer
@@ -134,9 +156,6 @@ class OrganizationProjectList(APIPermissionRequiredMixin,
         'GET': 'project.list',
         'POST': update_permissions('project.create')
     }
-    permission_filter_queryset = (lambda self, view, p: ('project.view',)
-                                  if p.archived is False
-                                  else ('project.view_archived',))
 
     def get_serializer_context(self, *args, **kwargs):
         org = self.get_organization()
@@ -147,13 +166,28 @@ class OrganizationProjectList(APIPermissionRequiredMixin,
         return context
 
     def get_queryset(self):
-        return super().get_queryset().filter(
-            organization__slug=self.kwargs['slug']
-        )
+        if self.is_administrator:
+            return super().get_queryset().filter(
+                organization__slug=self.kwargs['slug']
+            )
+        else:
+            return super().get_queryset().filter(
+                organization__slug=self.kwargs['slug'],
+                archived=False, access='public'
+            )
 
 
-class ProjectList(APIPermissionRequiredMixin, mixins.ProjectQuerySetMixin,
+class ProjectList(APIPermissionRequiredMixin,
+                  mixins.ProjectQuerySetMixin,
                   generics.ListAPIView):
+    def permission_filter(self, view, p):
+        if p.access == 'public' and p.archived is False:
+            return ('project.view',)
+        elif p.archived is True:
+            return ('project.view_archived',)
+        else:
+            return ('project.view_private',)
+
     serializer_class = serializers.ProjectSerializer
     filter_backends = (filters.DjangoFilterBackend,
                        filters.SearchFilter,
@@ -162,14 +196,11 @@ class ProjectList(APIPermissionRequiredMixin, mixins.ProjectQuerySetMixin,
     search_fields = ('name', 'organization__name', 'country', 'description',)
     ordering_fields = ('name', 'organization', 'country', 'description',)
     permission_required = {'GET': 'project.list'}
-    permission_filter_queryset = (lambda self, view, p: ('project.view',)
-                                  if p.archived is False
-                                  else ('project.view_archived',))
+    permission_filter_queryset = permission_filter
 
 
 class ProjectDetail(APIPermissionRequiredMixin,
                     mixins.OrganizationMixin,
-                    mixins.OrgAdminCheckMixin,
                     generics.RetrieveUpdateDestroyAPIView):
     def get_actions(self, request):
         if self.get_object().archived:

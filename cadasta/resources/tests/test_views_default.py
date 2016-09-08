@@ -312,7 +312,7 @@ class ProjectResourcesAddTest(UserTestCase):
         assert ("You don't have permission to add resources."
                 in [str(m) for m in get_messages(self.request)])
         assert self.project.resources.count() == 1
-        assert self.project.resources.first() == self.assigned
+        assert self.project.resources.first() == self.attached
 
 
 @pytest.mark.usefixtures('clear_temp')

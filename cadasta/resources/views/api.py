@@ -6,6 +6,11 @@ from . import mixins
 class ProjectResources(APIPermissionRequiredMixin,
                        mixins.ProjectResourceMixin,
                        generics.ListCreateAPIView):
+    def update_permissions(self, request):
+        if self.get_project().archived:
+            return False
+        return 'resource.add'
+
     filter_backends = (filters.DjangoFilterBackend,
                        filters.SearchFilter,
                        filters.OrderingFilter,)
@@ -14,7 +19,7 @@ class ProjectResources(APIPermissionRequiredMixin,
     ordering_fields = ('name', 'description', 'file',)
     permission_required = {
         'GET': 'resource.list',
-        'POST': 'resource.add'
+        'POST': update_permissions
     }
 
     def filter_archived_resources(self, view, obj):
@@ -32,6 +37,8 @@ class ProjectResourcesDetail(APIPermissionRequiredMixin,
                              generics.RetrieveUpdateAPIView):
     def patch_actions(self, request):
         if hasattr(request, 'data'):
+            if self.get_object().project.archived:
+                return False
             is_archived = self.get_object().archived
             new_archived = request.data.get('archived', is_archived)
             if not is_archived and (is_archived != new_archived):
